@@ -90,6 +90,27 @@ services:
     ports:
       - "${BACKEND_PORT:-8000}:8000"
 
+  # ---------- Celery Worker ----------
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: cybersec-worker
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+      QDRANT_HOST: qdrant
+      DEBUG: ${DEBUG:-false}
+    command: ["celery", "-A", "app.workers.celery_app.celery_app", "worker", "--loglevel=INFO"]
+
 volumes:
   postgres_data:
   redis_data:

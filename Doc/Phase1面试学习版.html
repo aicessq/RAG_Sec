@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phase 1 学习文档｜从面试官提问角度理解当前项目</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --brand: #1d4ed8;
+      --brand-soft: #dbeafe;
+      --ok: #166534;
+      --warn: #92400e;
+      --danger: #991b1b;
+      --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    .container {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 48px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 55%, #0f172a 100%);
+      color: #fff;
+      border-radius: 24px;
+      padding: 40px 32px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      margin: 0 0 12px;
+      font-size: 34px;
+      line-height: 1.25;
+    }
+
+    .hero p { margin: 8px 0; color: rgba(255,255,255,0.93); }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .badge {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.18);
+      font-size: 14px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 290px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .toc, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .toc {
+      position: sticky;
+      top: 20px;
+      padding: 20px;
+    }
+
+    .toc h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .toc a {
+      display: block;
+      text-decoration: none;
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 10px;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .toc a:hover {
+      background: #eff6ff;
+      color: var(--brand);
+    }
+
+    .content { display: grid; gap: 20px; }
+    .panel { padding: 24px; }
+    .panel h2 { margin-top: 0; font-size: 24px; }
+    .panel h3 { margin-top: 24px; margin-bottom: 10px; font-size: 18px; }
+    .lead { color: var(--muted); margin-top: -4px; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      background: #fff;
+    }
+
+    .card h4 { margin: 0 0 8px; font-size: 17px; }
+
+    .callout {
+      border-left: 5px solid var(--brand);
+      background: var(--brand-soft);
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin: 16px 0;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .done { background: #dcfce7; color: var(--ok); }
+    .todo { background: #fef3c7; color: var(--warn); }
+    .no { background: #fee2e2; color: var(--danger); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f9fafb;
+      color: #374151;
+      font-size: 14px;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    pre {
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 16px;
+      border-radius: 14px;
+      overflow-x: auto;
+      font-size: 13px;
+      font-family: Consolas, Monaco, "Courier New", monospace;
+    }
+
+    code {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+    }
+
+    .qa {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      margin-top: 14px;
+      background: #fcfcfd;
+    }
+
+    .qa .q { font-weight: 700; margin-bottom: 8px; }
+    .qa .a { color: #374151; }
+
+    .footer-note { color: var(--muted); font-size: 14px; }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .toc { position: static; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>CyberSec RAG Agent · Phase 1 学习文档</h1>
+      <p>从“面试官会怎么问你”这个角度，帮助你理解当前项目在 <strong>Phase 1</strong> 到底实现了什么、为什么要这样实现、以及还没有进入哪些业务边界。</p>
+      <div class="badge-row">
+        <span class="badge">当前阶段：Phase 1</span>
+        <span class="badge">重点：数据库模型、迁移、最小 CRUD、测试基础</span>
+        <span class="badge">仍未进入：上传 / 解析 / 检索 / 生成</span>
+      </div>
+    </section>
+
+    <div class="layout">
+      <aside class="toc">
+        <h2>目录</h2>
+        <a href="#intro">1. 一句话定义当前项目状态</a>
+        <a href="#upgrade">2. Phase 1 相比 Phase 0 升级了什么</a>
+        <a href="#implemented">3. 现在到底实现了哪些内容</a>
+        <a href="#schema">4. 你要理解的数据库设计重点</a>
+        <a href="#architecture">5. 当前代码结构怎么讲</a>
+        <a href="#qa">6. 面试官高频追问与答题思路</a>
+        <a href="#verify">7. 你需要会的运行与验证命令</a>
+        <a href="#notyet">8. 现在明确还没做什么</a>
+        <a href="#talking">9. 你该怎么口述这个项目</a>
+      </aside>
+
+      <main class="content">
+        <section id="intro" class="panel">
+          <h2>1. 一句话定义当前项目状态</h2>
+          <p class="lead">先学会用一句准确的话讲项目当前阶段，这是面试里最重要的基本功。</p>
+          <div class="callout">
+            <strong>推荐表述：</strong><br />
+            这是一个面向网络安全知识管理与检索的 RAG 系统项目，当前已经从 Phase 0 的工程骨架阶段推进到 <strong>Phase 1</strong>。现阶段已经完成 PostgreSQL ORM 数据模型、Alembic 迁移基础、首个数据库 schema、最小 CRUD 辅助层以及数据库相关测试骨架，但还没有进入文件上传、文本解析、chunk 切分、向量索引、检索融合和答案生成这些 RAG 业务流程。
+          </div>
+        </section>
+
+        <section id="upgrade" class="panel">
+          <h2>2. Phase 1 相比 Phase 0 升级了什么</h2>
+          <p class="lead">面试官会关心你不是“写了更多文件”，而是“系统能力发生了什么升级”。</p>
+          <div class="grid-2">
+            <div class="card">
+              <h4>Phase 0 <span class="status done">已完成</span></h4>
+              <p>解决的是：服务能不能启动、基础设施能不能连、项目结构是否清晰。</p>
+            </div>
+            <div class="card">
+              <h4>Phase 1 <span class="status done">已完成到当前实现</span></h4>
+              <p>解决的是：系统有没有正式的持久化地基，后续业务是否有可依赖的数据模型和迁移机制。</p>
+            </div>
+          </div>
+
+          <h3>本质变化</h3>
+          <ul>
+            <li>从“只有数据库连接检查”升级为“有正式 ORM 表结构”；</li>
+            <li>从“只有工程骨架”升级为“具备 schema migration 能力”；</li>
+            <li>从“无法验证真实持久化”升级为“可以创建核心数据库对象并进行最小 CRUD 验证”。</li>
+          </ul>
+        </section>
+
+        <section id="implemented" class="panel">
+          <h2>3. 现在到底实现了哪些内容</h2>
+          <p class="lead">这一节是你回答“你当前做了什么”时最容易直接用上的部分。</p>
+
+          <div class="grid-2">
+            <div class="card">
+              <h4>核心 ORM 模型 <span class="status done">已实现</span></h4>
+              <p>已实现 documents、document_versions、chunks、query_logs、feedback、ingest_tasks、eval_* 系列表。</p>
+            </div>
+            <div class="card">
+              <h4>Alembic 迁移基础 <span class="status done">已实现</span></h4>
+              <p>已补齐 <code>alembic.ini</code>、<code>env.py</code>、脚本模板和首个初始化 migration。</p>
+            </div>
+            <div class="card">
+              <h4>数据库首版 schema <span class="status done">已实现</span></h4>
+              <p>已覆盖 UUID 主键、JSONB 默认值、TSVECTOR 字段、GIN 索引、唯一约束、外键关系。</p>
+            </div>
+            <div class="card">
+              <h4>最小 CRUD 辅助层 <span class="status done">已实现</span></h4>
+              <p>已添加 document / version / chunk / ingest_task / eval_dataset / eval_run 的基础创建与按主键查询能力。</p>
+            </div>
+            <div class="card">
+              <h4>数据库测试骨架 <span class="status done">已实现</span></h4>
+              <p>已补充数据库迁移、模型默认值、约束、CRUD 的集成测试文件与夹具。</p>
+            </div>
+            <div class="card">
+              <h4>业务 API 扩展 <span class="status todo">刻意未做</span></h4>
+              <p>没有提前补上传、解析、检索等接口，保持与 Phase 边界一致。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="schema" class="panel">
+          <h2>4. 你要理解的数据库设计重点</h2>
+          <p class="lead">面试官很喜欢问“你数据库是怎么设计的，为什么这么设计”。</p>
+
+          <h3>4.1 为什么要先做这些表</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>表</th>
+                <th>作用</th>
+                <th>为什么 Phase 1 就要做</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>documents</code></td>
+                <td>逻辑文档主记录</td>
+                <td>后续上传、版本切换、检索可见性都依赖它</td>
+              </tr>
+              <tr>
+                <td><code>document_versions</code></td>
+                <td>文档历史版本</td>
+                <td>后续 replace 和增量更新必须依赖版本建模</td>
+              </tr>
+              <tr>
+                <td><code>chunks</code></td>
+                <td>chunk 存储与检索基础</td>
+                <td>后续切分、索引、检索都要落到这里</td>
+              </tr>
+              <tr>
+                <td><code>ingest_tasks</code></td>
+                <td>入库/替换任务持久化</td>
+                <td>后续 Celery 任务状态需要 Redis + DB 双写</td>
+              </tr>
+              <tr>
+                <td><code>query_logs</code> / <code>feedback</code></td>
+                <td>查询审计与用户反馈</td>
+                <td>后续安全、效果分析、可观测性都要靠它们</td>
+              </tr>
+              <tr>
+                <td><code>eval_*</code></td>
+                <td>评测数据集与运行结果</td>
+                <td>规格中已提前约定，Phase 1 要先把地基打好</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>4.2 设计上的几个关键点</h3>
+          <ul>
+            <li><strong>主键统一 UUID</strong>：便于分布式生成与后续数据扩展；</li>
+            <li><strong>JSONB 字段有默认值</strong>：避免空值和 Python 可变对象默认值混乱；</li>
+            <li><strong>只用 VARCHAR + 应用层枚举约束</strong>：当前阶段不引入 PostgreSQL ENUM 迁移复杂度；</li>
+            <li><strong>chunks 保留 <code>search_tsv</code></strong>：虽然 FTS 逻辑没做，但表结构先定义好；</li>
+            <li><strong>documents.current_version_id</strong> 与 <strong>document_versions</strong> 存在循环依赖：迁移要分步建立外键。</li>
+          </ul>
+
+          <div class="callout">
+            <strong>你可以这样解释：</strong><br />
+            Phase 1 不做业务流程，但必须把后续上传、版本管理、切分、检索、评测会依赖的数据结构一次性定义清楚，否则后面每个 Phase 都会反复返工 schema。
+          </div>
+        </section>
+
+        <section id="architecture" class="panel">
+          <h2>5. 当前代码结构怎么讲</h2>
+          <p class="lead">面试官会继续追问：你这些数据库能力是怎么挂进现有项目结构里的？</p>
+
+          <pre>config.py
+  ↓
+db/session.py        —— 统一 engine / SessionLocal
+  ↓
+db/base.py           —— 统一 DeclarativeBase / metadata
+  ↓
+models/*.py          —— 定义 10 张核心表的 ORM 结构
+  ↓
+alembic/env.py       —— 复用 Settings + Base.metadata
+  ↓
+alembic/versions/*   —— 首个 schema migration
+  ↓
+services/crud_service.py —— Phase 1 最小 CRUD 辅助层
+  ↓
+tests/conftest.py + test_models.py + test_crud.py</pre>
+
+          <h3>为什么不直接在路由里写 CRUD？</h3>
+          <p>因为当前阶段的重点是“先把持久化基础做好”，不是马上做业务 API。把最小 CRUD 放在服务辅助层，可以：</p>
+          <ul>
+            <li>先验证模型与事务是可用的；</li>
+            <li>避免为了演示接口而提前越过 Phase 边界；</li>
+            <li>给后续真正的业务 API 预留更稳定的复用点。</li>
+          </ul>
+        </section>
+
+        <section id="qa" class="panel">
+          <h2>6. 面试官高频追问与答题思路</h2>
+          <p class="lead">以下问题，是你在讲到 Phase 1 时大概率会被追问的。</p>
+
+          <div class="qa">
+            <div class="q">Q1：你为什么在还没做上传和检索之前，就先做这么多数据库表？</div>
+            <div class="a">因为这些表不是“以后可能用到”，而是后续所有 Phase 的正式依赖。比如没有 document_versions，就没法做 replace；没有 chunks，就没法做切分结果持久化；没有 ingest_tasks，就没法做异步任务审计。Phase 1 的核心就是把持久化地基一次性铺好。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q2：为什么用 Alembic，而不是直接手写 SQL？</div>
+            <div class="a">因为这个项目后续会持续演进 schema，单靠手写 SQL 不利于版本管理、升级回滚和团队协作。Alembic 可以让 ORM 模型和数据库 schema 有统一的演进路径。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q3：Phase 1 里最容易出错的地方是什么？</div>
+            <div class="a">主要有三个：第一，JSONB 默认值既要考虑 Python 侧 default，也要考虑数据库侧 server_default；第二，documents 和 document_versions 存在循环依赖；第三，chunks 里的 <code>search_tsv</code>、GIN 索引和 JSONB 字段都依赖 PostgreSQL 方言，不能偷懒退回普通类型。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q4：为什么当前只做“最小 CRUD 辅助层”，而不是完整 REST API？</div>
+            <div class="a">因为规格明确要求 Phase 1 不要提前做上传、解析、查询等业务逻辑。当前最小 CRUD 的目的只是验证模型、事务和持久化链路通了，而不是对外暴露完整业务能力。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q5：为什么 chunks 表在 Phase 1 就要有 <code>search_tsv</code> 字段？</div>
+            <div class="a">因为 PostgreSQL FTS 是后续架构确定的一部分。即使检索逻辑还没实现，schema 也应该先定义好，避免后面再做破坏性迁移。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q6：你现在真的实现了“RAG”吗？</div>
+            <div class="a">严格说还没有。当前只是把 RAG 所依赖的数据结构、迁移机制和最小持久化能力建立起来了。真正的 RAG 业务链路要在后续 Phase 才实现。</div>
+          </div>
+        </section>
+
+        <section id="verify" class="panel">
+          <h2>7. 你需要会的运行与验证命令</h2>
+          <p class="lead">如果面试官问“你怎么证明这部分是能工作的”，至少要会这些命令。</p>
+
+          <h3>7.1 安装依赖</h3>
+          <pre>pip install -e ".[test]"</pre>
+
+          <h3>7.2 启动数据库相关基础设施</h3>
+          <pre>docker compose up -d postgres redis qdrant</pre>
+
+          <h3>7.3 执行迁移</h3>
+          <pre>cd backend
+alembic upgrade head</pre>
+
+          <h3>7.4 跑默认测试</h3>
+          <pre>pytest</pre>
+
+          <h3>7.5 跑数据库相关测试</h3>
+          <pre>pytest -m integration
+pytest backend/tests/test_models.py backend/tests/test_crud.py -m integration</pre>
+
+          <div class="callout">
+            <strong>注意：</strong><br />
+            当前测试仍然保持分层：默认 <code>pytest</code> 不跑 integration；数据库相关测试只在你明确启动 PostgreSQL 并显式运行 integration 标记时才执行。
+          </div>
+        </section>
+
+        <section id="notyet" class="panel">
+          <h2>8. 现在明确还没做什么</h2>
+          <p class="lead">这部分非常关键，面试中最忌讳把“已建表”说成“业务已完成”。</p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>能力</th>
+                <th>当前状态</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>文件上传</td>
+                <td><span class="status no">未实现</span></td>
+                <td>没有实现 <code>/documents/upload</code> 的真实逻辑</td>
+              </tr>
+              <tr>
+                <td>文件保存与 file_hash 流程</td>
+                <td><span class="status no">未实现</span></td>
+                <td>schema 预留了字段，但流程还没做</td>
+              </tr>
+              <tr>
+                <td>解析 / 清洗 / 切分</td>
+                <td><span class="status no">未实现</span></td>
+                <td>相关 service 文件仍是占位或未启用业务逻辑</td>
+              </tr>
+              <tr>
+                <td>Embedding / Qdrant 写入</td>
+                <td><span class="status no">未实现</span></td>
+                <td>当前只实现了模型与连通性基础</td>
+              </tr>
+              <tr>
+                <td>检索 / 融合 / 重排</td>
+                <td><span class="status no">未实现</span></td>
+                <td>query pipeline 尚未开始</td>
+              </tr>
+              <tr>
+                <td>答案生成 / 引用校验</td>
+                <td><span class="status no">未实现</span></td>
+                <td>LLM 相关服务还没有进入落地阶段</td>
+              </tr>
+              <tr>
+                <td>Celery 异步任务</td>
+                <td><span class="status no">未实现</span></td>
+                <td>ingest_tasks 表已存在，但 worker 逻辑未实现</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="talking" class="panel">
+          <h2>9. 你该怎么口述这个项目</h2>
+          <p class="lead">下面这段话适合你在面试或答辩时直接使用。</p>
+
+          <div class="callout">
+            <strong>推荐讲法：</strong><br /><br />
+            这个项目是一个面向网络安全知识库场景的 RAG 系统。我目前已经把项目从 Phase 0 推进到 Phase 1。Phase 0 主要完成了工程骨架、基础设施编排和健康检查；Phase 1 则重点补齐了正式的持久化地基，包括 PostgreSQL ORM 模型、Alembic 迁移能力、首个数据库 schema，以及最小 CRUD 辅助层和数据库测试骨架。<br /><br />
+            我这样分阶段推进，是因为后续上传、版本管理、chunk 切分、向量索引、检索和评测都会依赖稳定的数据结构。如果一开始就直接写 RAG 业务，而 schema 还没定好，后面会反复返工。现在虽然还没有实现完整 RAG 流程，但项目已经具备了正式的数据持久化基础，后续 Phase 可以在这个基础上逐层扩展。
+          </div>
+
+          <h3>你在 Phase 1 最应该体现的能力</h3>
+          <ul>
+            <li>你理解“先做工程地基，再做业务流程”的节奏控制；</li>
+            <li>你知道如何把数据库模型、迁移、约束、索引一次性规划好；</li>
+            <li>你能准确区分“已经完成的持久化基础”和“尚未开始的 RAG 业务能力”。</li>
+          </ul>
+
+          <p class="footer-note">本文档基于当前仓库中的实际代码、Phase 1 计划、README 与规格文档整理。适合学习和复盘，不建议把未实现的后续能力包装成当前成果。</p>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

@@ -8,16 +8,20 @@
    - main.py 只需 include 一次聚合 router，启动代码保持干净；
    - 后续 Phase 新增接口时，只需新建对应文件并在本文件中追加一行 include。
 
-2. Phase 0 只聚合 health；其余路由文件目前是 TODO 占位，不 include，
-   避免引入未实现的路由导致启动报错或超范围。
+2. 当前已聚合：
+   - health：健康检查与就绪探针；
+   - upload：Phase 2 新文档上传入口。
+   后续 documents / query / admin / eval 等路由仍按阶段逐步接入。
 """
 
 from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.api import health
+from app.api import health, upload
 
 api_router = APIRouter()
 # 健康检查路由：/health 与 /health/ready 都在 health.router 内
 api_router.include_router(health.router)
+# Phase 2：启用新文档上传入口
+api_router.include_router(upload.router)

@@ -1,255 +1,383 @@
 # CyberSec RAG Agent — 网络安全领域 RAG 知识库系统
 
-> 本仓库当前进度：**Phase 0：项目初始化**（仅完成基础工程骨架，不含任何 RAG 业务逻辑）。
-> 权威实现规格见 [`Doc/文档2.MD`](Doc/文档2.MD)，执行纪律与默认决策见 [`Doc/CLAUDE.md`](Doc/CLAUDE.md)。
+> 当前实现进度：**Phase 2：上传入口 / 原始文件落盘 / 异步入库任务入口**
+> 权威实现规格见 [`Doc/文档2.MD`](Doc/文档2.MD)。
+> Claude Code 仓库操作说明见根目录 [`CLAUDE.md`](CLAUDE.md)。
 
-本文件既是 README，也是 **Phase 0 的中文实现说明文档**，面向初学者讲解：做了什么、为什么这么设计、如何启动、如何测试、如何验证环境联通，以及后续 Phase 将如何在此骨架上扩展。
+本仓库是一个面向**网络安全法规、标准、教材与知识资料**的 RAG 知识库后端项目。
+当前已经完成：
 
----
+- **Phase 0**：工程骨架、FastAPI、Docker Compose、PostgreSQL / Redis / Qdrant 联通
+- **Phase 1**：ORM 模型、Alembic 迁移、初始数据库 schema、最小 CRUD、数据库测试基础
+- **Phase 2（当前）**：`/documents/upload` 上传入口、本地原始文件存储、`file_hash` 计算、`document` / `document_version` / `ingest_task` 创建、Celery 异步任务投递入口
 
-## 一、Phase 0 做了什么
-
-Phase 0 的唯一目标是“让基础工程能跑起来”，对应规格 §21 / Phase 0 验收标准：
-
-1. 创建项目目录结构（与规格 §5 一致）。
-2. 创建 FastAPI 应用（`backend/app/main.py`）。
-3. 创建 `docker-compose.yml`，编排后端 + 基础设施。
-4. 集成 **PostgreSQL**（持久化）。
-5. 集成 **Redis**（任务状态缓存）。
-6. 集成 **Qdrant**（向量检索）。
-7. 创建 `.env.example`（配置模板）。
-8. 创建 `.gitignore`，并忽略 `models/`（本地模型文件不进仓库）。
-9. 创建本 README（兼中文实现文档）。
-10. 实现 `GET /health`（返回 `{"status":"ok"}`），并额外提供 `GET /health/ready` 用于联通性验收。
-
-### 为什么 Phase 0 只做这些
-
-RAG 系统的复杂度集中在“入库链路”和“检索链路”（规格 §4）。如果一上来就写业务逻辑，
-一旦基础设施（数据库、缓存、向量库）没接通，调试会非常痛苦。
-Phase 0 先把“地基”打通：服务能起、能连、能探活，后续每个 Phase 才能在稳定的地基上逐层叠加。
-因此本阶段**故意不实现**任何上传 / 解析 / 切分 / embedding / 检索 / 答案 / 评测逻辑。
+当前仍**没有实现**：真实解析、清洗、chunk 切分、embedding、Qdrant 索引、全文检索索引写入、检索问答、replace 版本更新、评测流水线。
 
 ---
 
-## 二、目录结构
+## 1. 当前阶段一句话说明
+
+如果你要向面试官或同学快速描述当前项目状态，推荐这样说：
+
+> 这是一个网络安全领域的 RAG 知识库后端项目，目前已经完成基础工程、数据库持久化地基，以及 Phase 2 的“新文档上传入口”。也就是说，系统现在已经能接收一个新文件、做基础校验、把原始文件按 document/version 维度落盘、计算 SHA-256、创建数据库记录，并投递一个异步入库任务；但真正的解析、切分、索引和问答链路还留在后续 Phase 实现。
+
+---
+
+## 2. 当前已实现能力
+
+### Phase 0：工程可运行地基
+
+- FastAPI 应用入口：`backend/app/main.py`
+- 健康检查：`GET /health`
+- 就绪检查：`GET /api/v1/health/ready`
+- Docker Compose 编排：PostgreSQL / Redis / Qdrant / backend
+- 配置集中管理：`backend/app/config.py`
+
+### Phase 1：数据库与持久化地基
+
+已实现核心表：
+
+- `documents`
+- `document_versions`
+- `chunks`
+- `ingest_tasks`
+- `query_logs`
+- `feedback`
+- `eval_datasets`
+- `eval_dataset_items`
+- `eval_runs`
+- `eval_run_items`
+
+已实现内容：
+
+- SQLAlchemy 2 ORM 模型
+- Alembic 环境与初始迁移
+- PostgreSQL 专用字段（如 `JSONB`、`TSVECTOR`）
+- GIN 索引
+- 最小 CRUD service
+- Phase 1 模型 / CRUD 集成测试
+
+### Phase 2：上传与异步任务入口（当前重点）
+
+已实现内容：
+
+- 上传接口：`POST /api/v1/documents/upload`
+- Multipart 表单字段解析
+- 上传文件基础校验：
+  - 文件不能为空
+  - 扩展名必须在白名单内
+  - MIME 类型必须在白名单内
+  - 文件大小必须在限制内
+- 原始文件 SHA-256：`backend/app/utils/hash_utils.py`
+- 本地文件存储：`backend/app/services/storage_service.py`
+- 上传编排服务：`backend/app/services/upload_service.py`
+- 上传响应 schema：`backend/app/schemas/upload.py`
+- Celery app：`backend/app/workers/celery_app.py`
+- 占位 ingest worker：`backend/app/workers/ingest_worker.py`
+- Docker Compose 中新增 `worker` 服务
+
+---
+
+## 3. 当前明确未实现的内容
+
+下面这些功能虽然在整体 RAG 架构里非常重要，但**当前阶段故意不做**：
+
+- PDF / Markdown / TXT 真正解析
+- 文本清洗 / 标准化
+- parent-child chunk 切分
+- `chunk_hash` diff 更新
+- embedding 生成
+- Qdrant upsert
+- PostgreSQL FTS `search_tsv` 回填
+- 混合检索 / RRF / rerank
+- answer generation / citation checker
+- `/documents/{id}/replace`
+- `/query/*` 相关接口
+- 评测执行链路
+
+这样做是为了严格遵循 `Doc/文档2.MD` 的分阶段纪律：**每个 Phase 只实现该阶段要求，不偷跑后续功能。**
+
+---
+
+## 4. 目录结构（按当前实现理解）
 
 ```text
 RAG_Sec/
-├─ README.md                 # 本文件（兼实现文档）
-├─ pyproject.toml            # 依赖与构建配置
-├─ docker-compose.yml        # 编排 PG / Redis / Qdrant / backend
-├─ .env.example              # 环境变量模板
-├─ .gitignore                # 含 models/
-├─ models/                   # 本地模型文件目录（已 gitignore）
-│  ├─ embedding/             # Qwen Embedding 模型（Phase 5 用）
-│  └─ reranker/              # Qwen3 Reranker 模型（Phase 5 用）
-└─ backend/
-   ├─ Dockerfile             # 后端镜像
-   ├─ alembic.ini            # Alembic 占位（Phase 1 配置）
-   ├─ app/
-   │  ├─ main.py             # FastAPI 入口（★核心）
-   │  ├─ config.py           # 配置（从 .env 读，Pydantic v2）（★核心）
-   │  ├─ logging_config.py   # 统一日志配置
-   │  ├─ dependencies.py     # Redis/Qdrant 客户端 + 连接检查 + get_db（★核心）
-   │  ├─ api/                # 路由层（health 已实现，其余 TODO 占位）
-   │  │  ├─ __init__.py      # 路由聚合
-   │  │  └─ health.py        # /health 与 /health/ready（★核心）
-   │  ├─ db/                 # 数据库会话
-   │  │  ├─ session.py       # SQLAlchemy 引擎 + 连接检查（★核心）
-   │  │  └─ base.py          # DeclarativeBase
-   │  ├─ models/             # ORM 模型（Phase 1，TODO 占位）
-   │  ├─ schemas/            # Pydantic schema（后续 Phase，TODO 占位）
-   │  ├─ services/           # 服务层（后续 Phase，TODO 占位）
-   │  ├─ workers/            # Celery worker（后续 Phase，TODO 占位）
-   │  ├─ prompts/            # Prompt 文件（后续 Phase，TODO 占位）
-   │  └─ utils/              # 工具函数（后续 Phase，TODO 占位）
-   └─ tests/                 # 测试
-      ├─ conftest.py         # 公共夹具（TestClient）
-      ├─ test_health.py      # 健康检查接口测试
-      ├─ test_config.py      # 配置/启动层基本验证
-      └─ test_integration.py # PG/Redis/Qdrant 连通性集成测试（默认跳过）
+├─ README.md
+├─ CLAUDE.md
+├─ docker-compose.yml
+├─ .env.example
+├─ pyproject.toml
+├─ backend/
+│  ├─ Dockerfile
+│  ├─ alembic.ini
+│  ├─ alembic/
+│  │  ├─ env.py
+│  │  └─ versions/
+│  ├─ app/
+│  │  ├─ main.py
+│  │  ├─ config.py
+│  │  ├─ dependencies.py
+│  │  ├─ api/
+│  │  │  ├─ __init__.py
+│  │  │  ├─ health.py
+│  │  │  └─ upload.py
+│  │  ├─ db/
+│  │  ├─ models/
+│  │  ├─ schemas/
+│  │  ├─ services/
+│  │  │  ├─ crud_service.py
+│  │  │  ├─ storage_service.py
+│  │  │  └─ upload_service.py
+│  │  ├─ utils/
+│  │  │  └─ hash_utils.py
+│  │  └─ workers/
+│  │     ├─ celery_app.py
+│  │     └─ ingest_worker.py
+│  └─ tests/
+│     ├─ test_health.py
+│     ├─ test_models.py
+│     ├─ test_crud.py
+│     └─ test_upload.py
+└─ Doc/
+   ├─ 文档2.MD
+   ├─ Phase0完成进度细节文档.md
+   ├─ Phase0面试学习版.html
+   └─ Phase1面试学习版.html
 ```
 
-> 标 ★ 的文件是 Phase 0 真正实现的核心文件，建议优先阅读。
-> 其余 `services/`、`models/`、`schemas/`、`workers/`、`prompts/` 下的文件均为**一行 TODO 占位**，
-> 只是为了让目录骨架与规格 §5 一致，里面没有任何业务实现。
-
 ---
 
-## 三、Docker 中每个服务的职责
+## 5. 上传链路当前是怎么工作的
 
-| 服务 | 镜像 | 端口 | 职责 | 在哪个 Phase 真正使用 |
-|------|------|------|------|----------------------|
-| `postgres` | postgres:16 | 5432 | 关系型持久化：文档、版本、chunk、任务、评测等所有业务表 | Phase 1 起建表 |
-| `redis` | redis:7 | 6379 | 实时任务状态缓存（与 PostgreSQL 双写，规格 §2.4） | Phase 2 入库任务 |
-| `qdrant` | qdrant/qdrant | 6333 | 向量检索，**只索引 child chunk**（规格 §2.3） | Phase 5 索引 |
-| `backend` | 本仓库 Dockerfile | 8000 | FastAPI 应用，对外提供 API | 本阶段已提供 /health |
+### 5.1 接口职责
 
-编排要点：
-- 后端 `depends_on` 三个基础设施的 `service_healthy`，确保 PG/Redis/Qdrant 就绪后再起后端。
-- 三个基础设施都配了 `healthcheck`，编排据此判断是否就绪。
-- `postgres_data` / `redis_data` / `qdrant_data` 三个命名卷做数据持久化。
+当前接口是：
 
----
-
-## 四、关键设计原因（学习向）
-
-### 1. 配置全部从 `.env` 读取（`config.py`）
-用 `pydantic-settings` 把环境变量映射成带类型校验的 `Settings` 对象。
-好处：同一份代码在本地（localhost）和 Docker（服务名 postgres/redis/qdrant）下只需换环境变量即可切换，
-且类型错误在启动时就暴露。连接串用 `@property` 派生，避免子字段改了连接串没同步。
-
-### 2. 健康检查分两层（`api/health.py`）
-- `GET /health`：**存活探针**，进程能响应就返回 `ok`，不依赖外部服务。规格 §17.1 要求的就是这个。
-- `GET /health/ready`：**就绪探针**，探活 PG/Redis/Qdrant 并返回各组件 `connected` 与耗时。
-  Phase 0 验收“三服务连接正常”用这个接口可复现验证。
-
-### 3. API 层不写业务逻辑
-`main.py` 只创建应用、配日志、注册路由、做最小异常兜底；`health.py` 只调用 `dependencies` 里的检查函数并组装结果，
-不直接拼连接串或发 SQL。这是规格 §3.2 的硬要求，也为后续 Phase 的服务层留出空间。
-
-### 4. 连接检查失败返回 False 而非抛异常
-`/health/ready` 需要能返回“部分不可用”，而不是某个组件挂了就让接口 500。检查函数吞掉异常并记日志。
-
-### 5. 测试分层
-- 默认 `pytest` 只跑**不需要基础设施**的测试（/health 结构、配置默认值、app 路由）；
-- 集成测试带 `integration` 标记且默认被 `addopts` 排除，需 `pytest -m integration` 显式运行，
-  这样在没起 docker 时 CI 不会红。
-
----
-
-## 五、如何启动
-
-### 方式 A：Docker Compose 一键启动（推荐，验收用）
-
-```bash
-# 1. 准备环境变量
-cp .env.example .env
-
-# 2. 构建并启动所有服务
-docker compose up -d --build
-
-# 3. 查看后端日志
-docker compose logs -f backend
+```http
+POST /api/v1/documents/upload
 ```
 
-启动后：
-- 后端：http://localhost:8000
-- Qdrant 控制台：http://localhost:6333/dashboard
-- API 文档（Swagger）：http://localhost:8000/docs
+它的职责很明确：
 
-### 方式 B：本地直接跑（用于开发/跑单元测试）
+1. 接收一个**新文档**上传
+2. 做基础校验
+3. 保存原始文件
+4. 创建数据库记录
+5. 创建异步任务记录
+6. 投递 Celery worker 入口
+7. 返回 `document_id`、`version_id`、`task_id`、`status`
+
+### 5.2 为什么 upload 只允许“新文档”
+
+根据规格，上传语义是：
+
+- `upload` = 创建一个全新的 `document`
+- `replace` = 给已有 document 创建新版本
+
+所以当前实现里：
+
+- `upload` **不允许传 `document_id`**
+- 如果传了，会返回 `invalid_request`
+
+这保证了 Phase 2 的接口语义保持单一，也避免提前把“版本替换逻辑”混进当前阶段。
+
+### 5.3 上传成功后会创建哪些记录
+
+成功上传后，会一次性创建：
+
+- `documents`：逻辑文档主体
+- `document_versions`：当前上传生成的第一个版本（`version_no = 1`）
+- `ingest_tasks`：异步入库任务（初始为 `queued`）
+
+### 5.4 当前事务边界
+
+`upload_service.py` 里使用了一次事务提交来完成：
+
+- `Document`
+- `DocumentVersion`
+- `IngestTask`
+
+这样做的原因是：上传动作在业务上是一个整体，不能只成功一半。
+
+当前顺序大致是：
+
+1. 读取上传 bytes
+2. 做校验
+3. 计算 `file_hash`
+4. 预生成 `document_id` / `version_id` / `task_id`
+5. 保存原始文件到本地
+6. 创建数据库记录并提交
+7. 提交成功后再 dispatch Celery 任务
+8. 如果 DB 失败，则尝试删除刚写入的文件
+
+### 5.5 文件存储路径为什么按 document/version 分层
+
+当前本地存储路径是 document/version aware 的，核心目的是：
+
+- 避免只靠原始文件名造成冲突
+- 让后续 replace / diff / 审计更容易追踪
+- 让“某个 document 的某个 version 的原始文件在哪”这个问题可以直接回答
+
+可理解为类似：
+
+```text
+storage/documents/<document_id>/<version_id>/<safe_filename>
+```
+
+---
+
+## 6. 异步任务当前做到哪一步
+
+当前 Celery 相关实现分为两层：
+
+### 6.1 Celery app
+
+`backend/app/workers/celery_app.py`：
+
+- 从配置读取 Redis 作为 broker / backend
+- 创建 Celery 应用对象
+
+### 6.2 ingest worker
+
+`backend/app/workers/ingest_worker.py` 当前只做 **Phase 2 安全边界内的占位行为**：
+
+- 接收 `document_id` / `version_id` / `task_id` / `file_path`
+- 从数据库读取 `IngestTask`
+- 把任务状态更新为 `processing`
+- 记录“后续 Phase 才会实现真实解析/索引”的占位说明
+
+它**不会**在当前阶段做以下事：
+
+- 解析 PDF / Markdown / TXT
+- 切 chunk
+- 写 `chunks`
+- 生成 embedding
+- 写入 Qdrant
+- 回填 FTS
+
+这不是功能缺失，而是**刻意遵守阶段边界**。
+
+---
+
+## 7. 环境与配置
+
+### 7.1 基础设施
+
+当前 `docker-compose.yml` 编排了：
+
+- `postgres`
+- `redis`
+- `qdrant`
+- `backend`
+- `worker`
+
+### 7.2 关键配置项
+
+`.env.example` 中 Phase 2 新增 / 强化了这些配置：
+
+- `STORAGE_ROOT=storage`
+- `MAX_UPLOAD_SIZE_MB=20`
+- `ALLOWED_UPLOAD_EXTENSIONS=.pdf,.md,.markdown,.txt`
+- `ALLOWED_UPLOAD_MIME_TYPES=application/pdf,text/markdown,text/plain,text/x-markdown`
+
+### 7.3 Python 环境约束
+
+本项目后续 Python 操作应始终使用**项目专用虚拟环境 / conda 环境**，不要使用用户全局 Python。
+
+---
+
+## 8. 常用命令
+
+> 说明：当前会话中要求优先使用项目专用 conda / 虚拟环境。下面命令默认都应在该环境内执行。
+
+### 8.1 安装依赖
 
 ```bash
-# 在 backend/ 下创建虚拟环境并安装依赖
-python -m venv .venv
-# Windows: .venv\Scripts\activate   | Linux/Mac: source .venv/bin/activate
 pip install -e ".[test]"
+```
 
-# 启动（需要 PG/Redis/Qdrant 可达，或仅测 /health）
+### 8.2 启动基础设施
+
+```bash
+docker compose up -d postgres redis qdrant
+```
+
+### 8.3 启动全部服务（含 backend / worker）
+
+```bash
+docker compose up -d --build
+```
+
+### 8.4 本地启动 FastAPI
+
+```bash
 cd backend
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-> 注意：本地直接跑时，`config.py` 默认用 `localhost` 连基础设施。
-> 若此时没有起 docker compose，`/health` 仍返回 `ok`，但 `/health/ready` 会显示各组件 `connected=false`。这是预期行为。
-
----
-
-## 六、如何测试
+### 8.5 启动 Celery worker（本地）
 
 ```bash
-# 安装测试依赖（已含在 [test] extra 中）
-pip install -e ".[test]"
+cd backend
+celery -A app.workers.celery_app.celery_app worker --loglevel=INFO
+```
 
-# 1. 默认单元测试：不需要任何基础设施
+### 8.6 数据库迁移
+
+```bash
+cd backend
+alembic upgrade head
+```
+
+### 8.7 运行测试
+
+```bash
+# 默认测试（非 integration）
 pytest
 
-# 2. 集成测试：需要先 docker compose up 起好 PG/Redis/Qdrant
+# 集成测试
 pytest -m integration
 
-# 3. 跑全部测试
-pytest -m ""
+# 只跑上传测试
+pytest backend/tests/test_upload.py
+
+# 只跑模型测试
+pytest backend/tests/test_models.py
+
+# 只跑 CRUD 测试
+pytest backend/tests/test_crud.py
 ```
 
-### 预期结果
+---
 
-- `pytest`（默认）：
-  - `test_health.py::test_health_returns_ok` ✅
-  - `test_health.py::test_health_ready_shape` ✅（只校验结构）
-  - `test_config.py::test_settings_defaults` ✅
-  - `test_config.py::test_app_object_has_health_route` ✅
-- `pytest -m integration`（基础设施已起时）：
-  - `test_postgres_connection` ✅
-  - `test_redis_connection` ✅
-  - `test_qdrant_connection` ✅
-  - `test_health_ready_all_ok` ✅
+## 9. 当前最值得阅读的文件
+
+如果你想快速理解现在的项目，建议按这个顺序读：
+
+1. `Doc/文档2.MD`：权威规格
+2. `backend/app/api/upload.py`：上传接口入口
+3. `backend/app/services/upload_service.py`：Phase 2 核心业务编排
+4. `backend/app/services/storage_service.py`：文件本地存储抽象
+5. `backend/app/workers/ingest_worker.py`：异步入口边界
+6. `backend/app/models/document.py`
+7. `backend/app/models/document_version.py`
+8. `backend/app/models/ingest_task.py`
+9. `backend/tests/test_upload.py`
 
 ---
 
-## 七、如何验证环境联通（验收步骤）
+## 10. 下一步会进入什么阶段
 
-```bash
-# 1. 启动全部服务
-docker compose up -d --build
+按规格，后续阶段会逐步进入：
 
-# 2. 存活探针：必须返回 {"status":"ok"}
-curl http://localhost:8000/health
+- Phase 3：解析与清洗
+- Phase 4：chunk 切分
+- Phase 5：embedding / 索引
+- Phase 6：混合检索
+- Phase 7：查询理解与安全边界
+- Phase 8：答案生成与引用校验
+- Phase 9：replace / 增量更新
+- Phase 10：评测体系
 
-# 3. 就绪探针：三组件 connected 全部为 true
-curl http://localhost:8000/api/v1/health/ready
-
-# 4.（可选）直接验证三个基础设施端口
-#    PostgreSQL
-docker compose exec postgres pg_isready -U cybersec -d cybersec_rag
-#    Redis
-docker compose exec redis redis-cli ping
-#    Qdrant
-curl http://localhost:6333/
-
-# 5. 跑集成测试复现验收
-pytest -m integration
-
-# 6. 收尾
-docker compose down        # 停服务（保留数据卷）
-docker compose down -v     # 停服务并删除数据卷
-```
-
-**预期结果**：
-- `/health` → `{"status":"ok"}`
-- `/health/ready` → `{"status":"ok","components":{"postgres":{"connected":true,...},"redis":{...},"qdrant":{...}}}`
-- 集成测试全部通过。
-
----
-
-## 八、哪些是 Phase 0 占位，后续 Phase 才实现
-
-| 占位内容 | 何时实现 |
-|---------|---------|
-| `app/models/*` ORM 表模型 + Alembic 迁移 | Phase 1 |
-| `app/api/upload.py`、`documents.py`、`query.py`、`admin.py`、`eval.py` | Phase 2 / 6 / 8 / 10 |
-| `app/services/parser_service.py`、`cleaner_service.py` | Phase 3 |
-| `app/services/chunk_service.py` | Phase 4 |
-| `app/services/embedding_service.py`、`vector_store.py`、`keyword_store.py`、`reranker.py` | Phase 5 |
-| `app/services/retriever.py`、`fusion.py` | Phase 6 |
-| `app/services/safety_guard.py`、`intent_classifier.py`、`query_rewriter.py` 等 + `app/prompts/*` | Phase 7 |
-| `app/services/answer_generator.py`、`citation_checker.py` | Phase 8 |
-| `app/services/update_service.py`（chunk diff 增量更新） | Phase 9 |
-| `app/services/eval_service.py` | Phase 10 |
-| `app/workers/*` Celery 任务 | Phase 2+ |
-
----
-
-## 九、后续 Phase 如何在当前骨架上扩展
-
-1. **加表（Phase 1）**：在 `app/models/` 下新建 ORM 类继承 `app/db/base.py:Base`，配置 Alembic 后 `alembic upgrade head`。
-2. **加接口**：在 `app/api/` 下新建 router，在 `app/api/__init__.py` 中 `include_router`，
-   业务逻辑放 `app/services/`，路由层只做参数解析与调用（依赖 `dependencies.get_db` 取会话）。
-3. **加基础设施客户端**：参照 `dependencies.py` 中 Redis/Qdrant 的写法，集中创建、懒加载、暴露连接检查。
-4. **加配置项**：在 `config.py:Settings` 加字段，并在 `.env.example` 同步补占位，避免配置散落。
-
----
-
-## 十、技术栈
-
-Python 3.11+ · FastAPI · Pydantic v2 · SQLAlchemy 2.x · PostgreSQL · Redis · Qdrant · Docker Compose · pytest · `pyproject.toml` 管理依赖。
+所以当前 Phase 2 的本质，是把“上传一个新文档并形成可异步处理的入口”这个最小闭环搭起来，为后续真实 ingest pipeline 铺路。

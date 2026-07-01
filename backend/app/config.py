@@ -22,8 +22,9 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -60,6 +61,33 @@ class Settings(BaseSettings):
     # 向量集合名：Phase 0 仅占位，真正建集合在 Phase 5
     qdrant_collection: str = Field(default="cybersec_chunks", description="Qdrant 集合名")
 
+    # ---- Phase 2：上传与本地存储配置 ----
+    storage_root: Path = Field(default=Path("storage"), description="原始文件存储根目录")
+    max_upload_size_mb: int = Field(default=20, description="单文件最大上传大小（MB）")
+    allowed_upload_extensions: list[str] = Field(
+        default_factory=lambda: [".pdf", ".md", ".markdown", ".txt"],
+        description="允许上传的文件扩展名列表",
+    )
+    allowed_upload_mime_types: list[str] = Field(
+        default_factory=lambda: [
+            "application/pdf",
+            "text/markdown",
+            "text/plain",
+            "text/x-markdown",
+        ],
+        description="允许上传的 MIME 类型列表",
+    )
+
+    @field_validator("allowed_upload_extensions", "allowed_upload_mime_types", mode="before")
+    @classmethod
+    def parse_csv_list(cls, value: list[str] | str) -> list[str]:
+        """支持从 .env 的逗号分隔字符串解析列表配置。"""
+        if isinstance(value, list):
+            return value
+        if isinstance(value, str):
+            return [item.strip() for item in value.split(",") if item.strip()]
+        return []
+
     # Pydantic v2 的配置写法：从 .env 读取，且字段大小写不敏感
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -94,6 +122,16 @@ class Settings(BaseSettings):
     def qdrant_url(self) -> str:
         """返回 Qdrant HTTP 连接 URL。"""
         return f"http://{self.qdrant_host}:{self.qdrant_port}"
+
+    @property
+    def celery_broker_url(self) -> str:
+        """返回 Celery broker URL。Phase 2 默认复用 Redis。"""
+        return self.redis_url
+
+    @property
+    def celery_result_backend(self) -> str:
+        """返回 Celery result backend URL。Phase 2 默认复用 Redis。"""
+        return self.redis_url
 
 
 @lru_cache

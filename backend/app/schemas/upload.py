@@ -1,7 +1,29 @@
-"""upload 相关 Pydantic schema。
+"""upload 相关 Pydantic schema。"""
 
-Phase 0 占位文件：本模块属于规格 §5 规划的后续 Phase，当前不实现任何业务逻辑。
-后续 Phase 实现时再补全，避免提前超范围实现。
-"""
+from __future__ import annotations
 
-# TODO: 待对应 Phase 实现。
+from datetime import date
+from uuid import UUID
+
+from pydantic import BaseModel, Field
+
+
+class UploadResponse(BaseModel):
+    """上传成功响应。"""
+
+    document_id: UUID
+    version_id: UUID
+    task_id: UUID
+    status: str = Field(default="queued")
+
+
+class UploadRequestMeta(BaseModel):
+    """上传请求中的结构化元数据。"""
+
+    title: str
+    doc_type: str
+    security_domain: list[str] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
+    publish_date: date | None = None
+    effective_date: date | None = None
+    version_status: str = Field(default="active")

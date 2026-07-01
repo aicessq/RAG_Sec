@@ -1,7 +1,14 @@
 """Hash 工具（file_hash / chunk_hash）。
 
-Phase 0 占位文件：本模块属于规格 §5 规划的后续 Phase，当前不实现任何业务逻辑。
-后续 Phase 实现时再补全，避免提前超范围实现。
+Phase 2 只实现文件级哈希：基于原始 bytes 计算 SHA-256，
+用于 document_version.file_hash。
 """
 
-# TODO: 待对应 Phase 实现。
+from __future__ import annotations
+
+import hashlib
+
+
+def calculate_file_hash(file_bytes: bytes) -> str:
+    """基于原始文件 bytes 计算 SHA-256。"""
+    return hashlib.sha256(file_bytes).hexdigest()

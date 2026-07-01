@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title=settings.app_name,
-    description="网络安全领域 RAG 知识库系统（Phase 0：项目初始化骨架）",
+    description="网络安全领域 RAG 知识库系统（当前已完成到 Phase 2：上传入口与异步任务入口）",
     version="0.1.0",
 )
 
