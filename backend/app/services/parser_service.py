@@ -1,7 +1,135 @@
 """文档解析服务（PDF/Markdown/TXT）。
 
-Phase 0 占位文件：本模块属于规格 §5 规划的后续 Phase，当前不实现任何业务逻辑。
-后续 Phase 实现时再补全，避免提前超范围实现。
+Phase 3 负责把上传后的原始文件解析为统一的中间结构，
+供后续 Phase 4 的 chunk 切分继续使用。
+
+本阶段只做：
+- PDF 逐页提取文本
+- Markdown / TXT 读取
+- 页码保留
+- 统一输出 ParsedDocument / ParsedPage
+
+本阶段明确不做：
+- chunk 切分
+- 章节/条款结构化抽取
+- embedding / index / query 逻辑
 """
 
-# TODO: 待对应 Phase 实现。
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from pathlib import Path
+
+import fitz
+
+
+class ParseError(RuntimeError):
+    """文档解析失败。"""
+
+
+@dataclass(slots=True)
+class ParsedPage:
+    """统一的页级解析结果。"""
+
+    page_number: int
+    text: str
+    tables: list[str] = field(default_factory=list)
+    images: list[str] = field(default_factory=list)
+
+
+@dataclass(slots=True)
+class ParsedDocument:
+    """统一的文档级解析结果。"""
+
+    title: str
+    pages: list[ParsedPage]
+    metadata: dict[str, str | int | list[str]] = field(default_factory=dict)
+
+
+def parse_document(file_path: str | Path, *, title: str | None = None) -> ParsedDocument:
+    """按文件类型分派解析逻辑。"""
+    path = Path(file_path)
+    suffix = path.suffix.lower()
+
+    if not path.exists():
+        raise ParseError(f"文件不存在: {path}")
+    if suffix == ".pdf":
+        return parse_pdf(path, title=title)
+    if suffix in {".md", ".markdown"}:
+        return parse_markdown(path, title=title)
+    if suffix == ".txt":
+        return parse_txt(path, title=title)
+    raise ParseError(f"暂不支持解析该文件类型: {suffix or '<unknown>'}")
+
+
+def parse_pdf(file_path: str | Path, *, title: str | None = None) -> ParsedDocument:
+    """逐页解析 PDF 并保留页码。"""
+    path = Path(file_path)
+
+    try:
+        document = fitz.open(path)
+    except Exception as exc:  # noqa: BLE001 - 统一转换为 ParseError
+        raise ParseError(f"PDF 打开失败: {path.name}") from exc
+
+    try:
+        pages: list[ParsedPage] = []
+        for index, page in enumerate(document, start=1):
+            text = page.get_text("text") or ""
+            pages.append(ParsedPage(page_number=index, text=text))
+
+        return ParsedDocument(
+            title=title or path.stem,
+            pages=pages,
+            metadata={
+                "source_type": "pdf",
+                "source_path": str(path),
+                "page_count": len(pages),
+            },
+        )
+    except Exception as exc:  # noqa: BLE001 - 统一转换为 ParseError
+        raise ParseError(f"PDF 解析失败: {path.name}") from exc
+    finally:
+        document.close()
+
+
+def parse_markdown(file_path: str | Path, *, title: str | None = None) -> ParsedDocument:
+    """读取 Markdown，并统一为单页文档。"""
+    path = Path(file_path)
+    text = _read_text_file(path)
+    return ParsedDocument(
+        title=title or path.stem,
+        pages=[ParsedPage(page_number=1, text=text)],
+        metadata={
+            "source_type": "markdown",
+            "source_path": str(path),
+            "page_count": 1,
+        },
+    )
+
+
+def parse_txt(file_path: str | Path, *, title: str | None = None) -> ParsedDocument:
+    """读取 TXT，并统一为单页文档。"""
+    path = Path(file_path)
+    text = _read_text_file(path)
+    return ParsedDocument(
+        title=title or path.stem,
+        pages=[ParsedPage(page_number=1, text=text)],
+        metadata={
+            "source_type": "txt",
+            "source_path": str(path),
+            "page_count": 1,
+        },
+    )
+
+
+def _read_text_file(path: Path) -> str:
+    """以有限 fallback 策略读取文本文件。"""
+    encodings = ("utf-8", "utf-8-sig", "gb18030")
+    for encoding in encodings:
+        try:
+            return path.read_text(encoding=encoding)
+        except UnicodeDecodeError:
+            continue
+        except OSError as exc:
+            raise ParseError(f"文件读取失败: {path.name}") from exc
+    raise ParseError(f"文本解码失败: {path.name}")

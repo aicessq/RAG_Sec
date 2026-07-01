@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phase 3 学习文档｜从面试官提问角度理解当前项目</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --brand: #1d4ed8;
+      --brand-soft: #dbeafe;
+      --ok: #166534;
+      --warn: #92400e;
+      --danger: #991b1b;
+      --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    .container {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 48px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #111827 0%, #1d4ed8 55%, #0ea5e9 100%);
+      color: #fff;
+      border-radius: 24px;
+      padding: 40px 32px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      margin: 0 0 12px;
+      font-size: 34px;
+      line-height: 1.25;
+    }
+
+    .hero p { margin: 8px 0; color: rgba(255,255,255,0.93); }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .badge {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.18);
+      font-size: 14px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 290px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .toc, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .toc {
+      position: sticky;
+      top: 20px;
+      padding: 20px;
+    }
+
+    .toc h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .toc a {
+      display: block;
+      text-decoration: none;
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 10px;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .toc a:hover {
+      background: #eff6ff;
+      color: var(--brand);
+    }
+
+    .content { display: grid; gap: 20px; }
+    .panel { padding: 24px; }
+    .panel h2 { margin-top: 0; font-size: 24px; }
+    .panel h3 { margin-top: 24px; margin-bottom: 10px; font-size: 18px; }
+    .lead { color: var(--muted); margin-top: -4px; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      background: #fff;
+    }
+
+    .card h4 { margin: 0 0 8px; font-size: 17px; }
+
+    .callout {
+      border-left: 5px solid var(--brand);
+      background: var(--brand-soft);
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin: 16px 0;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .done { background: #dcfce7; color: var(--ok); }
+    .todo { background: #fef3c7; color: var(--warn); }
+    .no { background: #fee2e2; color: var(--danger); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f9fafb;
+      color: #374151;
+      font-size: 14px;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    pre {
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 16px;
+      border-radius: 14px;
+      overflow-x: auto;
+      font-size: 13px;
+      font-family: Consolas, Monaco, "Courier New", monospace;
+    }
+
+    code {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+    }
+
+    .qa {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      margin-top: 14px;
+      background: #fcfcfd;
+    }
+
+    .qa .q { font-weight: 700; margin-bottom: 8px; }
+    .qa .a { color: #374151; }
+
+    .footer-note { color: var(--muted); font-size: 14px; }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .toc { position: static; }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>CyberSec RAG Agent · Phase 3 学习文档</h1>
+      <p>从“面试官会怎么追问你”这个角度，理解当前项目在 <strong>Phase 3</strong> 到底已经具备了什么能力、为什么这样拆层、以及还明确保留了哪些边界。</p>
+      <div class="badge-row">
+        <span class="badge">当前阶段：Phase 3</span>
+        <span class="badge">重点：解析 / 页码保留 / 基础清洗 / 失败状态回写</span>
+        <span class="badge">仍未进入：chunk / embedding / index / query</span>
+      </div>
+    </section>
+
+    <div class="layout">
+      <aside class="toc">
+        <h2>目录</h2>
+        <a href="#intro">1. 一句话定义当前项目状态</a>
+        <a href="#upgrade">2. Phase 3 相比 Phase 2 升级了什么</a>
+        <a href="#implemented">3. 当前到底实现了哪些内容</a>
+        <a href="#flow">4. 解析链路怎么讲清楚</a>
+        <a href="#design">5. 关键设计点为什么这样做</a>
+        <a href="#qa">6. 面试官高频追问与答题思路</a>
+        <a href="#verify">7. 你需要会的运行与验证命令</a>
+        <a href="#notyet">8. 现在明确还没做什么</a>
+        <a href="#talking">9. 你该怎么口述这个项目</a>
+      </aside>
+
+      <main class="content">
+        <section id="intro" class="panel">
+          <h2>1. 一句话定义当前项目状态</h2>
+          <p class="lead">面试里最重要的能力之一，是能用一句话把当前系统成熟度讲准确，而不是泛泛地说“我做了个 RAG 项目”。</p>
+          <div class="callout">
+            <strong>推荐表述：</strong><br />
+            这是一个面向网络安全知识资料的 RAG 后端项目，当前已经完成到 <strong>Phase 3</strong>。系统不仅能接收新文档并创建异步入库任务，还已经能把 PDF / Markdown / TXT 原始文件解析为统一的中间文本结构，保留页码，并做基础文本清洗；如果解析失败，还会把 <code>ingest_task</code> 明确回写为失败状态。但当前还没有进入 chunk 切分、向量化、索引、检索和答案生成阶段。
+          </div>
+        </section>
+
+        <section id="upgrade" class="panel">
+          <h2>2. Phase 3 相比 Phase 2 升级了什么</h2>
+          <p class="lead">面试官更关心“系统能力发生了什么升级”，而不是“你又写了哪些文件”。</p>
+          <div class="grid-3">
+            <div class="card">
+              <h4>Phase 1 <span class="status done">已完成</span></h4>
+              <p>解决数据库模型、迁移和持久化地基问题。</p>
+            </div>
+            <div class="card">
+              <h4>Phase 2 <span class="status done">已完成</span></h4>
+              <p>解决上传入口、原始文件落盘、任务入口和异步投递问题。</p>
+            </div>
+            <div class="card">
+              <h4>Phase 3 <span class="status done">当前重点</span></h4>
+              <p>解决“文件进入系统后，如何可靠地提取可处理文本并保住页码”的问题。</p>
+            </div>
+          </div>
+
+          <h3>本质升级</h3>
+          <ul>
+            <li>系统从“只会接收文件”升级为“已经开始理解原始文件内容”。</li>
+            <li>worker 不再只是占位修改状态，而是开始真正执行解析与基础清洗。</li>
+            <li>后续 Phase 4 的 chunk 切分，现在已经有统一输入结构可消费。</li>
+          </ul>
+        </section>
+
+        <section id="implemented" class="panel">
+          <h2>3. 当前到底实现了哪些内容</h2>
+          <p class="lead">你要能清楚地区分：现在能做什么，和现在故意还不能做什么。</p>
+
+          <h3>已完成模块</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>模块</th>
+                <th>当前状态</th>
+                <th>你在面试里要怎么描述</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>上传入口</td>
+                <td><span class="status done">已完成</span></td>
+                <td>系统能接收新文档并创建 document / version / task。</td>
+              </tr>
+              <tr>
+                <td>统一解析结构</td>
+                <td><span class="status done">已完成</span></td>
+                <td>不同文件类型都会被转成统一的 ParsedDocument / ParsedPage。</td>
+              </tr>
+              <tr>
+                <td>PDF 逐页解析</td>
+                <td><span class="status done">已完成</span></td>
+                <td>能按页提取文本并保留 page_number。</td>
+              </tr>
+              <tr>
+                <td>Markdown / TXT 解析</td>
+                <td><span class="status done">已完成</span></td>
+                <td>当前作为单页文档统一处理，page_number = 1。</td>
+              </tr>
+              <tr>
+                <td>基础清洗</td>
+                <td><span class="status done">已完成</span></td>
+                <td>做保守清洗，不破坏编号、代码块和表格结构。</td>
+              </tr>
+              <tr>
+                <td>失败状态回写</td>
+                <td><span class="status done">已完成</span></td>
+                <td>解析/清洗失败时会把 ingest_task 标记为 failed 并写入 error_message。</td>
+              </tr>
+              <tr>
+                <td>chunk / index / query</td>
+                <td><span class="status no">未做</span></td>
+                <td>仍严格留在后续 Phase。</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>涉及到的关键文件</h3>
+          <div class="grid-2">
+            <div class="card">
+              <h4><code>backend/app/services/parser_service.py</code></h4>
+              <p>统一解析结构和按文件类型分派的入口。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/app/services/cleaner_service.py</code></h4>
+              <p>负责保守清洗、页眉页脚移除和断行修复。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/app/workers/ingest_worker.py</code></h4>
+              <p>把 parser + cleaner 接入异步任务链路，并负责失败状态回写。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/tests/test_parser.py</code></h4>
+              <p>覆盖 PDF / Markdown / TXT 解析与页码保留行为。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/tests/test_cleaner.py</code></h4>
+              <p>覆盖清洗规则和“不破坏关键编号”的边界。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/tests/test_ingest_worker.py</code></h4>
+              <p>覆盖任务成功/失败状态流转。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="flow" class="panel">
+          <h2>4. 解析链路怎么讲清楚</h2>
+          <p class="lead">真正体现理解深度的，不是“我做了 parser”，而是能把输入到输出说成一个完整闭环。</p>
+
+          <h3>推荐你背下来的处理顺序</h3>
+          <pre><code>客户端上传文件
+  -> FastAPI route 接收 multipart/form-data
+  -> upload_service 保存原始文件并创建 document/version/task
+  -> Celery worker 收到 ingest_document_task
+  -> 将 ingest_task.status 更新为 processing
+  -> parser_service 按后缀解析 PDF / Markdown / TXT
+  -> 统一输出 ParsedDocument / ParsedPage
+  -> cleaner_service 做基础保守清洗
+  -> 成功时写阶段性完成说明
+  -> 失败时写 failed + error_message</code></pre>
+
+          <h3>为什么这条链路很关键</h3>
+          <div class="callout">
+            因为 Phase 3 解决的是“原始文件如何变成后续可处理文本”这个问题。没有这个阶段，后面的 chunk、embedding 和检索都无从谈起。
+          </div>
+
+          <h3>页码保留意味着什么</h3>
+          <p>它不代表当前已经有 chunk metadata 落库，而是说明：<strong>后续 Phase 4 在切分 chunk 时，已经有可继承的 page_number 基础信息</strong>。这一步是为将来的 <code>page_start/page_end</code> 做准备。</p>
+        </section>
+
+        <section id="design" class="panel">
+          <h2>5. 关键设计点为什么这样做</h2>
+          <p class="lead">面试里最容易被追问的，往往都是“为什么”。</p>
+
+          <h3>1）为什么 parser 和 cleaner 必须拆开？</h3>
+          <p>因为 parser 负责“尽量忠实提取”，cleaner 负责“最低必要整理”。如果混在一起，后续很难判断问题究竟是提取阶段丢了文本，还是清洗阶段把文本处理坏了。</p>
+
+          <h3>2）为什么需要统一 ParsedDocument / ParsedPage？</h3>
+          <p>因为后续 chunk_service 不应该关心源文件到底是 PDF、Markdown 还是 TXT。统一中间结构能让后续阶段只处理一种输入模型，减少分支复杂度。</p>
+
+          <h3>3）为什么 Markdown / TXT 直接视作单页？</h3>
+          <p>因为它们没有天然页码。Phase 3 的目标是保证接口一致，而不是发明复杂伪分页策略。单页策略简单、稳定、可解释，也足够支撑后续阶段继续推进。</p>
+
+          <h3>4）为什么 cleaner 要非常保守？</h3>
+          <p>因为像法规条款号、标准编号、CVE 编号、代码块、表格结构这些内容，一旦被“清洗坏”，后续切 chunk 和检索都很难补救。所以当前策略是宁可少清一些，也不要误伤关键信息。</p>
+
+          <h3>5）为什么失败时一定要回写 ingest_task？</h3>
+          <p>因为只打日志对调用方是不可见的。任务失败必须体现在数据库状态上，系统外层才能知道“上传成功了，但后台解析失败了”，这也是异步系统最基本的可观测性要求。</p>
+
+          <h3>6）为什么当前 worker 成功不等于“知识入库完成”？</h3>
+          <p>因为解析与清洗只是 ingest pipeline 的前半段。后面还有 chunk、embedding、向量入库、关键词索引等步骤，所以当前成功只能理解为“Phase 3 阶段目标完成”，不能夸大成“文档已经可检索”。</p>
+        </section>
+
+        <section id="qa" class="panel">
+          <h2>6. 面试官高频追问与答题思路</h2>
+          <p class="lead">下面这些问题，基本就是你讲到当前阶段时最容易被问到的点。</p>
+
+          <div class="qa">
+            <div class="q">Q1：你们现在已经能解析哪些文件？</div>
+            <div class="a">A：当前支持 PDF、Markdown 和 TXT。PDF 按页解析并保留真实页码，Markdown/TXT 当前统一视作单页文档处理。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q2：为什么不在 parser 里直接顺手把 chunk 也切了？</div>
+            <div class="a">A：因为这会直接越过 Phase 边界。Phase 3 的职责是“提取 + 清洗”，Phase 4 才是结构化切分。现在强行加 chunk，会把 parser、cleaner 和 chunk 逻辑耦合在一起，不利于后续维护和验收。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q3：清洗阶段最容易出什么问题？</div>
+            <div class="a">A：最容易误伤条款编号、标准编号、CVE 编号、代码块和表格结构。所以当前 cleaner 是保守策略，只处理明确噪声，不做结构化语义改写。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q4：为什么要统一 ParsedDocument，而不是让不同 parser 返回不同结构？</div>
+            <div class="a">A：因为后续 chunk_service 和检索链路不应该知道上游原始文件类型。统一结构可以把文件类型差异限制在 parser 层，减少整个系统的耦合面。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q5：如果 PDF 损坏了怎么办？</div>
+            <div class="a">A：当前实现会抛出解析错误，worker 会捕获异常，把 ingest_task.status 写成 failed，并把错误信息写到 error_message，避免静默失败。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q6：那你们现在能检索这些解析后的文档了吗？</div>
+            <div class="a">A：还不能。当前阶段只负责把原始文件变成统一可处理文本，并保留页码与失败状态。真正检索要等 chunk、索引和检索链路补齐之后才成立。</div>
+          </div>
+        </section>
+
+        <section id="verify" class="panel">
+          <h2>7. 你需要会的运行与验证命令</h2>
+          <p class="lead">你不一定已经现场跑过所有命令，但至少要知道 Phase 3 的理论验收路径。</p>
+
+          <h3>依赖安装</h3>
+          <pre><code>pip install -e ".[test]"</code></pre>
+
+          <h3>执行迁移</h3>
+          <pre><code>cd backend
+alembic upgrade head</code></pre>
+
+          <h3>运行 Phase 3 测试</h3>
+          <pre><code>pytest backend/tests/test_parser.py
+pytest backend/tests/test_cleaner.py
+pytest backend/tests/test_ingest_worker.py -m integration</code></pre>
+
+          <h3>运行默认测试</h3>
+          <pre><code>pytest</code></pre>
+
+          <h3>手动验证思路</h3>
+          <pre><code>上传一个 PDF / Markdown / TXT
+  -> 确认 ingest_task 进入 processing
+  -> 成功时看到“解析与清洗已完成”的阶段性结果
+  -> 损坏 PDF 时确认 status=failed 且 error_message 有内容</code></pre>
+
+          <p class="footer-note">注意：当前“成功”只代表 Phase 3 的解析/清洗阶段成功，不代表文档已经完成完整知识入库。</p>
+        </section>
+
+        <section id="notyet" class="panel">
+          <h2>8. 现在明确还没做什么</h2>
+          <p class="lead">面试时越能把边界讲清楚，越能体现你不是在“虚报完成度”。</p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>能力</th>
+                <th>当前状态</th>
+                <th>为什么还没做</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>chunk 切分</td>
+                <td><span class="status no">未实现</span></td>
+                <td>这是 Phase 4 的核心内容。</td>
+              </tr>
+              <tr>
+                <td>parent-child chunk</td>
+                <td><span class="status no">未实现</span></td>
+                <td>依赖 chunk 设计，不属于当前解析阶段。</td>
+              </tr>
+              <tr>
+                <td>chunk_hash</td>
+                <td><span class="status no">未实现</span></td>
+                <td>属于增量更新与切分后的逻辑。</td>
+              </tr>
+              <tr>
+                <td>embedding / Qdrant</td>
+                <td><span class="status no">未实现</span></td>
+                <td>这是 Phase 5 的索引能力。</td>
+              </tr>
+              <tr>
+                <td>PostgreSQL FTS 回填</td>
+                <td><span class="status no">未实现</span></td>
+                <td>要等 chunk 生成后才有意义。</td>
+              </tr>
+              <tr>
+                <td>检索问答</td>
+                <td><span class="status no">未实现</span></td>
+                <td>需要向量检索、关键词检索、RRF、rerank、answer generator 完整链路。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="talking" class="panel">
+          <h2>9. 你该怎么口述这个项目</h2>
+          <p class="lead">最后给你一个适合面试场景的口述模板。</p>
+          <div class="callout">
+            我做的是一个网络安全领域 RAG 知识库后端项目。这个项目是按 Phase 逐步推进的：先完成工程骨架和基础设施联通，再完成数据库模型和迁移，然后完成上传入口。当前推进到 Phase 3，重点是把“原始文件如何变成后续可处理文本”这件事落地。现在系统已经能把上传后的 PDF、Markdown、TXT 解析成统一的中间结构，保留页码，并通过独立 cleaner 做基础清洗；如果解析失败，还会把异步任务状态明确写回数据库。这样虽然还没有进入 chunk、索引和问答，但已经把后续 ingest pipeline 所需的文本输入层搭出来了。
+          </div>
+          <p class="footer-note">如果你把上面这段讲顺，再能回答“为什么 parser 和 cleaner 要拆开”“为什么当前成功不等于完整入库完成”“为什么失败一定要回写 ingest_task”，基本就能把当前阶段讲得很扎实了。</p>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

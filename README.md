@@ -1,6 +1,6 @@
 # CyberSec RAG Agent — 网络安全领域 RAG 知识库系统
 
-> 当前实现进度：**Phase 2：上传入口 / 原始文件落盘 / 异步入库任务入口**
+> 当前实现进度：**Phase 4：结构化切分与 chunk 落库**
 > 权威实现规格见 [`Doc/文档2.MD`](Doc/文档2.MD)。
 > Claude Code 仓库操作说明见根目录 [`CLAUDE.md`](CLAUDE.md)。
 
@@ -9,9 +9,11 @@
 
 - **Phase 0**：工程骨架、FastAPI、Docker Compose、PostgreSQL / Redis / Qdrant 联通
 - **Phase 1**：ORM 模型、Alembic 迁移、初始数据库 schema、最小 CRUD、数据库测试基础
-- **Phase 2（当前）**：`/documents/upload` 上传入口、本地原始文件存储、`file_hash` 计算、`document` / `document_version` / `ingest_task` 创建、Celery 异步任务投递入口
+- **Phase 2**：`/documents/upload` 上传入口、本地原始文件存储、`file_hash` 计算、`document` / `document_version` / `ingest_task` 创建、Celery 异步任务投递入口
+- **Phase 3**：PDF / Markdown / TXT 解析、页码保留、基础文本清洗、解析失败时 `ingest_task` 状态回写
+- **Phase 4（当前）**：法规/标准切分、教材/手册/笔记切分、fallback recursive chunker、parent-child chunk、`chunk_hash` 生成、chunk 元数据组织与 PostgreSQL `chunks` 落库
 
-当前仍**没有实现**：真实解析、清洗、chunk 切分、embedding、Qdrant 索引、全文检索索引写入、检索问答、replace 版本更新、评测流水线。
+当前仍**没有实现**：embedding、Qdrant 索引、PostgreSQL FTS 写入逻辑、reranker、检索问答、replace / chunk diff、评测流水线。
 
 ---
 
@@ -19,7 +21,7 @@
 
 如果你要向面试官或同学快速描述当前项目状态，推荐这样说：
 
-> 这是一个网络安全领域的 RAG 知识库后端项目，目前已经完成基础工程、数据库持久化地基，以及 Phase 2 的“新文档上传入口”。也就是说，系统现在已经能接收一个新文件、做基础校验、把原始文件按 document/version 维度落盘、计算 SHA-256、创建数据库记录，并投递一个异步入库任务；但真正的解析、切分、索引和问答链路还留在后续 Phase 实现。
+> 这是一个网络安全领域的 RAG 知识库后端项目，目前已经完成基础工程、数据库持久化地基、上传入口、原始文件解析与基础清洗，并推进到了 Phase 4 的“结构化切分与 chunk 落库”。也就是说，系统现在已经能把法规、标准、教材、手册或普通文本切成可追踪的 parent-child chunk 结构，生成稳定的 `chunk_hash`，保留页码与章节/条款等基础 metadata，并把 chunk 数据落到 PostgreSQL；但真正的 embedding、向量索引、关键词索引和检索问答仍留在后续 Phase。
 
 ---
 
@@ -57,24 +59,53 @@
 - 最小 CRUD service
 - Phase 1 模型 / CRUD 集成测试
 
-### Phase 2：上传与异步任务入口（当前重点）
+### Phase 2：上传与异步任务入口
 
 已实现内容：
 
 - 上传接口：`POST /api/v1/documents/upload`
 - Multipart 表单字段解析
-- 上传文件基础校验：
-  - 文件不能为空
-  - 扩展名必须在白名单内
-  - MIME 类型必须在白名单内
-  - 文件大小必须在限制内
+- 上传文件基础校验
 - 原始文件 SHA-256：`backend/app/utils/hash_utils.py`
 - 本地文件存储：`backend/app/services/storage_service.py`
 - 上传编排服务：`backend/app/services/upload_service.py`
-- 上传响应 schema：`backend/app/schemas/upload.py`
 - Celery app：`backend/app/workers/celery_app.py`
-- 占位 ingest worker：`backend/app/workers/ingest_worker.py`
-- Docker Compose 中新增 `worker` 服务
+- 异步 ingest 任务入口
+
+### Phase 3：解析与基础清洗
+
+已实现内容：
+
+- 统一解析输出结构：`ParsedPage` / `ParsedDocument`
+- PDF 逐页解析并保留页码
+- Markdown / TXT 解析为单页文档
+- 基础文本清洗
+- parser + cleaner 接入 worker
+- 解析/清洗失败时将 `ingest_task.status` 更新为 `failed`
+
+### Phase 4：结构化切分与 chunk 落库（当前重点）
+
+已实现内容：
+
+- 统一 chunk 中间结构：`ChunkDraft`
+- 文档类型分流：
+  - `law / regulation / standard / policy`
+  - `textbook / manual / note`
+  - fallback recursive chunking
+- 法规/标准优先按章/节/条切分
+- 长条款继续拆 child chunk，并保留 `article_no`
+- 教材/手册/笔记按标题层级与段落切分
+- 代码块优先整体保留
+- parent-child chunk 关系生成
+- 基于 `normalized_text` 的稳定 `chunk_hash`
+- 组织基础 metadata：
+  - `chapter`
+  - `section`
+  - `article_no`
+  - `page_start`
+  - `page_end`
+- `chunks` 表持久化
+- worker 中接入：解析 → 清洗 → 切分 → chunk 落库
 
 ---
 
@@ -82,17 +113,14 @@
 
 下面这些功能虽然在整体 RAG 架构里非常重要，但**当前阶段故意不做**：
 
-- PDF / Markdown / TXT 真正解析
-- 文本清洗 / 标准化
-- parent-child chunk 切分
-- `chunk_hash` diff 更新
 - embedding 生成
 - Qdrant upsert
-- PostgreSQL FTS `search_tsv` 回填
-- 混合检索 / RRF / rerank
+- PostgreSQL FTS `search_tsv` 写入逻辑
+- reranker
+- 混合检索 / RRF / query pipeline
 - answer generation / citation checker
 - `/documents/{id}/replace`
-- `/query/*` 相关接口
+- chunk diff 增量更新
 - 评测执行链路
 
 这样做是为了严格遵循 `Doc/文档2.MD` 的分阶段纪律：**每个 Phase 只实现该阶段要求，不偷跑后续功能。**
@@ -112,8 +140,6 @@ RAG_Sec/
 │  ├─ Dockerfile
 │  ├─ alembic.ini
 │  ├─ alembic/
-│  │  ├─ env.py
-│  │  └─ versions/
 │  ├─ app/
 │  │  ├─ main.py
 │  │  ├─ config.py
@@ -128,135 +154,115 @@ RAG_Sec/
 │  │  ├─ services/
 │  │  │  ├─ crud_service.py
 │  │  │  ├─ storage_service.py
-│  │  │  └─ upload_service.py
+│  │  │  ├─ upload_service.py
+│  │  │  ├─ parser_service.py
+│  │  │  ├─ cleaner_service.py
+│  │  │  └─ chunk_service.py
 │  │  ├─ utils/
 │  │  │  └─ hash_utils.py
 │  │  └─ workers/
 │  │     ├─ celery_app.py
 │  │     └─ ingest_worker.py
 │  └─ tests/
+│     ├─ fixtures/
 │     ├─ test_health.py
 │     ├─ test_models.py
 │     ├─ test_crud.py
-│     └─ test_upload.py
+│     ├─ test_upload.py
+│     ├─ test_parser.py
+│     ├─ test_cleaner.py
+│     ├─ test_chunk_service.py
+│     └─ test_ingest_worker.py
 └─ Doc/
    ├─ 文档2.MD
-   ├─ Phase0完成进度细节文档.md
    ├─ Phase0面试学习版.html
-   └─ Phase1面试学习版.html
+   ├─ Phase1面试学习版.html
+   ├─ Phase2面试学习版.html
+   └─ Phase3面试学习版.html
 ```
 
 ---
 
-## 5. 上传链路当前是怎么工作的
+## 5. 当前切分链路是怎么工作的
 
-### 5.1 接口职责
+### 5.1 Phase 3 到 Phase 4 的变化
 
-当前接口是：
+Phase 3 解决的是：
 
-```http
-POST /api/v1/documents/upload
-```
+- 原始文件如何被解析为统一文本结构
+- 如何做基础清洗
+- 解析/清洗失败如何写回任务状态
 
-它的职责很明确：
+Phase 4 在此基础上新增：
 
-1. 接收一个**新文档**上传
-2. 做基础校验
-3. 保存原始文件
-4. 创建数据库记录
-5. 创建异步任务记录
-6. 投递 Celery worker 入口
-7. 返回 `document_id`、`version_id`、`task_id`、`status`
+- 按文档类型选择不同 chunker
+- 生成 parent-child chunk 关系
+- 生成稳定 `chunk_hash`
+- 组织 chunk metadata
+- 把 chunk 数据持久化到 PostgreSQL
 
-### 5.2 为什么 upload 只允许“新文档”
+### 5.2 chunk 中间结构
 
-根据规格，上传语义是：
+当前 `chunk_service.py` 会先生成统一的中间结果 `ChunkDraft`，再映射为 ORM 可持久化记录。
 
-- `upload` = 创建一个全新的 `document`
-- `replace` = 给已有 document 创建新版本
+这样做的好处是：
 
-所以当前实现里：
+- 切分逻辑与数据库落库逻辑解耦
+- chunk 规则更容易单元测试
+- 后续更容易调试“为什么这一段被切成这样”
 
-- `upload` **不允许传 `document_id`**
-- 如果传了，会返回 `invalid_request`
+### 5.3 文档类型分流策略
 
-这保证了 Phase 2 的接口语义保持单一，也避免提前把“版本替换逻辑”混进当前阶段。
+当前切分策略不是“一把梭”通用切分，而是按文档类型分流：
 
-### 5.3 上传成功后会创建哪些记录
+- **法规 / 标准 / policy 类**：优先按章/节/条切
+- **教材 / 手册 / note 类**：优先按标题层级和段落切
+- **结构不清晰文本**：走 fallback recursive chunker
 
-成功上传后，会一次性创建：
+这样做的原因是：法规类文本和教材类文本的组织结构完全不同，强行套一个切分器会导致 metadata 很混乱。
 
-- `documents`：逻辑文档主体
-- `document_versions`：当前上传生成的第一个版本（`version_no = 1`）
-- `ingest_tasks`：异步入库任务（初始为 `queued`）
+### 5.4 parent-child 为什么现在就做
 
-### 5.4 当前事务边界
+虽然真正索引还没开始，但 Phase 4 就必须开始遵守：
 
-`upload_service.py` 里使用了一次事务提交来完成：
+- **child chunk**：未来检索主单元
+- **parent chunk**：未来上下文回填单元
 
-- `Document`
-- `DocumentVersion`
-- `IngestTask`
+也就是说，Phase 4 的设计已经在为 Phase 5/6 的检索能力铺路。
 
-这样做的原因是：上传动作在业务上是一个整体，不能只成功一半。
+### 5.5 chunk_hash 为什么重要
 
-当前顺序大致是：
+当前 `chunk_hash` 基于 `normalized_text` 生成。
+这样做的意义是：
 
-1. 读取上传 bytes
-2. 做校验
-3. 计算 `file_hash`
-4. 预生成 `document_id` / `version_id` / `task_id`
-5. 保存原始文件到本地
-6. 创建数据库记录并提交
-7. 提交成功后再 dispatch Celery 任务
-8. 如果 DB 失败，则尝试删除刚写入的文件
-
-### 5.5 文件存储路径为什么按 document/version 分层
-
-当前本地存储路径是 document/version aware 的，核心目的是：
-
-- 避免只靠原始文件名造成冲突
-- 让后续 replace / diff / 审计更容易追踪
-- 让“某个 document 的某个 version 的原始文件在哪”这个问题可以直接回答
-
-可理解为类似：
-
-```text
-storage/documents/<document_id>/<version_id>/<safe_filename>
-```
+- 对无意义空白变化不敏感
+- 对真实文本变化敏感
+- 为后续 Phase 9 的 chunk diff 增量更新打基础
 
 ---
 
-## 6. 异步任务当前做到哪一步
+## 6. ingest worker 当前做到哪一步
 
-当前 Celery 相关实现分为两层：
+`backend/app/workers/ingest_worker.py` 当前的主流程是：
 
-### 6.1 Celery app
+1. 读取 `document_id / version_id / task_id / file_path`
+2. 把任务状态更新为 `processing`
+3. 调用 parser
+4. 调用 cleaner
+5. 调用 `chunk_service.generate_chunks(...)`
+6. 调用 `build_chunk_records(...)`
+7. 将 parent / child chunk 写入 `chunks` 表
+8. 成功时更新任务说明
+9. 失败时把 `ingest_task.status` 更新为 `failed`
 
-`backend/app/workers/celery_app.py`：
+### 当前成功语义要怎么理解
 
-- 从配置读取 Redis 作为 broker / backend
-- 创建 Celery 应用对象
+当前 worker 成功，**不代表系统已经具备检索能力**。
+它只代表：
 
-### 6.2 ingest worker
+> Phase 4 所要求的“解析、清洗、结构化切分与 chunk 落库”已完成。
 
-`backend/app/workers/ingest_worker.py` 当前只做 **Phase 2 安全边界内的占位行为**：
-
-- 接收 `document_id` / `version_id` / `task_id` / `file_path`
-- 从数据库读取 `IngestTask`
-- 把任务状态更新为 `processing`
-- 记录“后续 Phase 才会实现真实解析/索引”的占位说明
-
-它**不会**在当前阶段做以下事：
-
-- 解析 PDF / Markdown / TXT
-- 切 chunk
-- 写 `chunks`
-- 生成 embedding
-- 写入 Qdrant
-- 回填 FTS
-
-这不是功能缺失，而是**刻意遵守阶段边界**。
+后续真正进入可检索状态，还需要 Phase 5 补 embedding / index，Phase 6 补 retrieval。
 
 ---
 
@@ -272,14 +278,13 @@ storage/documents/<document_id>/<version_id>/<safe_filename>
 - `backend`
 - `worker`
 
-### 7.2 关键配置项
+### 7.2 关键依赖
 
-`.env.example` 中 Phase 2 新增 / 强化了这些配置：
+当前切分阶段主要依赖：
 
-- `STORAGE_ROOT=storage`
-- `MAX_UPLOAD_SIZE_MB=20`
-- `ALLOWED_UPLOAD_EXTENSIONS=.pdf,.md,.markdown,.txt`
-- `ALLOWED_UPLOAD_MIME_TYPES=application/pdf,text/markdown,text/plain,text/x-markdown`
+- `PyMuPDF`：PDF 解析
+- 项目内 `chunk_service.py`
+- 项目内 `hash_utils.py`
 
 ### 7.3 Python 环境约束
 
@@ -336,17 +341,11 @@ alembic upgrade head
 # 默认测试（非 integration）
 pytest
 
-# 集成测试
-pytest -m integration
+# Phase 4 切分测试
+pytest backend/tests/test_chunk_service.py
 
-# 只跑上传测试
-pytest backend/tests/test_upload.py
-
-# 只跑模型测试
-pytest backend/tests/test_models.py
-
-# 只跑 CRUD 测试
-pytest backend/tests/test_crud.py
+# worker 集成测试
+pytest backend/tests/test_ingest_worker.py -m integration
 ```
 
 ---
@@ -356,14 +355,12 @@ pytest backend/tests/test_crud.py
 如果你想快速理解现在的项目，建议按这个顺序读：
 
 1. `Doc/文档2.MD`：权威规格
-2. `backend/app/api/upload.py`：上传接口入口
-3. `backend/app/services/upload_service.py`：Phase 2 核心业务编排
-4. `backend/app/services/storage_service.py`：文件本地存储抽象
-5. `backend/app/workers/ingest_worker.py`：异步入口边界
-6. `backend/app/models/document.py`
-7. `backend/app/models/document_version.py`
-8. `backend/app/models/ingest_task.py`
-9. `backend/tests/test_upload.py`
+2. `backend/app/services/chunk_service.py`：Phase 4 核心切分逻辑
+3. `backend/app/utils/hash_utils.py`：`normalized_text` 与 `chunk_hash`
+4. `backend/app/models/chunk.py`：chunk 持久化结构
+5. `backend/app/workers/ingest_worker.py`：解析 → 清洗 → 切分 → 落库 主链路
+6. `backend/tests/test_chunk_service.py`
+7. `backend/tests/test_ingest_worker.py`
 
 ---
 
@@ -371,8 +368,6 @@ pytest backend/tests/test_crud.py
 
 按规格，后续阶段会逐步进入：
 
-- Phase 3：解析与清洗
-- Phase 4：chunk 切分
 - Phase 5：embedding / 索引
 - Phase 6：混合检索
 - Phase 7：查询理解与安全边界
@@ -380,4 +375,4 @@ pytest backend/tests/test_crud.py
 - Phase 9：replace / 增量更新
 - Phase 10：评测体系
 
-所以当前 Phase 2 的本质，是把“上传一个新文档并形成可异步处理的入口”这个最小闭环搭起来，为后续真实 ingest pipeline 铺路。
+所以当前 Phase 4 的本质，是把“可解析的文档文本”，升级为“可被后续检索系统索引和引用的结构化 chunk 数据”。

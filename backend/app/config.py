@@ -15,8 +15,10 @@
    - 自带类型校验（类型标注写错会在启动时直接报错，而不是运行时才暴露）；
    - 与 FastAPI / Pydantic 生态一致。
 
-3. Phase 0 只暴露“基础设施连接”相关配置；
-   后续 Phase（embedding 路径、reranker 路径、LLM key 等）会在这里逐步补充。
+3. 配置项会按 Phase 逐步扩展：
+   - Phase 0~4：基础设施、上传、持久化、切分；
+   - Phase 5：本地 embedding / reranker、Qdrant collection、FTS 参数；
+   - Phase 7+：LLM key 与更完整的查询链路配置。
 """
 
 from __future__ import annotations
@@ -38,7 +40,7 @@ class Settings(BaseSettings):
     # ---- 通用应用配置 ----
     # 应用名称，仅用于日志/健康检查展示
     app_name: str = Field(default="cybersec-rag-agent", description="应用名称")
-    # 调试模式：Phase 0 暂不深度使用，保留开关供后续 Phase 调试
+    # 调试模式：保留给 SQL 打印、服务调试与测试观测使用
     debug: bool = Field(default=False, description="是否开启调试模式")
 
     # ---- PostgreSQL 配置 ----
@@ -58,8 +60,8 @@ class Settings(BaseSettings):
     # ---- Qdrant 配置 ----
     qdrant_host: str = Field(default="localhost", description="Qdrant 主机")
     qdrant_port: int = Field(default=6333, description="Qdrant HTTP 端口")
-    # 向量集合名：Phase 0 仅占位，真正建集合在 Phase 5
     qdrant_collection: str = Field(default="cybersec_chunks", description="Qdrant 集合名")
+    qdrant_distance_metric: str = Field(default="Cosine", description="Qdrant 向量距离类型")
 
     # ---- Phase 2：上传与本地存储配置 ----
     storage_root: Path = Field(default=Path("storage"), description="原始文件存储根目录")
@@ -78,6 +80,14 @@ class Settings(BaseSettings):
         description="允许上传的 MIME 类型列表",
     )
 
+    # ---- Phase 5：本地模型与索引配置 ----
+    embedding_model_path: Path = Field(default=Path("models/embedding"), description="本地 embedding 模型目录")
+    reranker_model_path: Path = Field(default=Path("models/reranker"), description="本地 reranker 模型目录")
+    embedding_vector_size: int = Field(default=1024, description="embedding 向量维度")
+    embedding_batch_size: int = Field(default=16, description="embedding 批处理大小")
+    reranker_batch_size: int = Field(default=16, description="reranker 批处理大小")
+    fts_language_config: str = Field(default="simple", description="PostgreSQL FTS 语言配置")
+
     @field_validator("allowed_upload_extensions", "allowed_upload_mime_types", mode="before")
     @classmethod
     def parse_csv_list(cls, value: list[str] | str) -> list[str]:
@@ -87,6 +97,15 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return [item.strip() for item in value.split(",") if item.strip()]
         return []
+
+    @field_validator("qdrant_distance_metric")
+    @classmethod
+    def validate_qdrant_distance_metric(cls, value: str) -> str:
+        """限制当前 Phase 支持的 Qdrant 距离类型。"""
+        normalized = value.strip()
+        if normalized not in {"Cosine", "Dot", "Euclid", "Manhattan"}:
+            raise ValueError("qdrant_distance_metric 仅支持 Cosine / Dot / Euclid / Manhattan")
+        return normalized
 
     # Pydantic v2 的配置写法：从 .env 读取，且字段大小写不敏感
     model_config = SettingsConfigDict(
