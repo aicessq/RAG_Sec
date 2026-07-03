@@ -17,6 +17,7 @@ from app.models.document_version import DocumentVersion
 from app.models.eval_dataset import EvalDataset
 from app.models.eval_run import EvalRun
 from app.models.ingest_task import IngestTask
+from app.models.query_log import QueryLog
 
 T = TypeVar("T")
 
@@ -135,6 +136,43 @@ def create_ingest_task(
     db.commit()
     db.refresh(ingest_task)
     return ingest_task
+
+
+def create_query_log(
+    db: Session,
+    *,
+    user_query: str,
+    rewritten_query: str | None = None,
+    intent: str | None = None,
+    safety_action: str | None = None,
+    risk_type: str | None = None,
+    filters: dict[str, Any] | None = None,
+    retrieved_chunk_ids: list[str] | None = None,
+    reranked_chunk_ids: list[str] | None = None,
+    answer: str | None = None,
+    answer_status: str | None = None,
+    latency_ms: int | None = None,
+    model_name: str | None = None,
+) -> QueryLog:
+    """创建 query_log 记录。"""
+    query_log = QueryLog(
+        user_query=user_query,
+        rewritten_query=rewritten_query,
+        intent=intent,
+        safety_action=safety_action,
+        risk_type=risk_type,
+        filters=filters or {},
+        retrieved_chunk_ids=retrieved_chunk_ids or [],
+        reranked_chunk_ids=reranked_chunk_ids or [],
+        answer=answer,
+        answer_status=answer_status,
+        latency_ms=latency_ms,
+        model_name=model_name,
+    )
+    db.add(query_log)
+    db.commit()
+    db.refresh(query_log)
+    return query_log
 
 
 def create_eval_dataset(

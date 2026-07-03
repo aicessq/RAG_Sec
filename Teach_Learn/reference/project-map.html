@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>项目结构速查图</title>
+  <link rel="stylesheet" href="../assets/lesson.css" />
+</head>
+<body>
+<main>
+<article>
+  <h1>项目结构速查图</h1>
+  <p class="small">用途：当你不知道某个功能该看哪里时，先看这张地图。</p>
+
+  <h2>一眼看懂仓库</h2>
+  <div class="grid">
+    <section class="card"><h3><code>backend/</code></h3><p>FastAPI 后端、数据库模型、服务层、Celery worker、测试。</p></section>
+    <section class="card"><h3><code>frontend/</code></h3><p>React + TypeScript + Vite 前端 MVP，调用后端 API。</p></section>
+    <section class="card"><h3><code>Doc/</code></h3><p>项目规格、阶段说明、面试/学习材料。<code>Doc/文档2.MD</code> 是权威规格。</p></section>
+    <section class="card"><h3><code>eval/</code></h3><p>评测数据，例如 golden dataset。</p></section>
+    <section class="card"><h3><code>models/</code></h3><p>本地模型资产或模型相关文件。</p></section>
+    <section class="card"><h3><code>docker-compose.yml</code></h3><p>PostgreSQL、Redis、Qdrant、backend、worker 等服务编排。</p></section>
+  </div>
+
+  <h2>后端内部地图</h2>
+  <pre>backend/app/
+├─ main.py              # 创建 FastAPI app，注册中间件和 routers
+├─ api/                 # 薄路由层：只处理 HTTP 输入/输出和异常翻译
+├─ services/            # 核心业务流程：ingest、retrieve、answer、eval、update
+├─ models/              # SQLAlchemy ORM 模型
+├─ schemas/             # Pydantic 请求/响应结构
+├─ db/                  # 数据库连接、session、Base metadata
+├─ prompts/             # LLM prompt 模板
+└─ workers/             # Celery app 与异步 ingest worker</pre>
+
+  <h2>四条主流程</h2>
+  <ol>
+    <li><strong>上传 / ingest：</strong>文件校验 → 存储 → 创建记录 → Celery 解析清洗切块 → 只索引 child chunks。</li>
+    <li><strong>查询问答：</strong>safety → intent → term expansion → rewrite → metadata filter → hybrid retrieval → answer → citation check。</li>
+    <li><strong>替换更新：</strong>上传新版本 → chunk hash diff → 只新增/复用/停用变化的 child chunks → 切换 current version。</li>
+    <li><strong>评测：</strong>读取 golden dataset → 跑真实查询链路 → 计算 Recall/MRR/citation/refusal/latency → 入库。</li>
+  </ol>
+
+  <div class="callout">
+    <strong>读代码口诀：</strong>先找 API 入口，再跳 service；如果是后台任务，再跳 worker；如果涉及持久化，再看 models 和 migrations。
+  </div>
+
+  <h2>相关课程</h2>
+  <ul>
+    <li><a href="../lessons/0001-read-the-project-map.html">第 1 课：用一张地图读懂项目结构</a></li>
+  </ul>
+</article>
+</main>
+</body>
+</html>

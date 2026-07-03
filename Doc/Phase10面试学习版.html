@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phase 10 学习文档｜从面试官提问角度理解当前项目</title>
+  <style>
+    body { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; margin: 0; background: #f4f7fb; color: #1f2937; line-height: 1.7; }
+    .container { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 48px; }
+    .hero { background: linear-gradient(135deg,#0f172a 0%,#0891b2 45%,#14b8a6 100%); color: #fff; border-radius: 24px; padding: 40px 32px; margin-bottom: 24px; }
+    .hero h1 { margin: 0 0 12px; font-size: 34px; }
+    .badge { display:inline-block; margin:6px 8px 0 0; padding:8px 12px; border-radius:999px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.18); font-size:14px; }
+    .panel { background:#fff; border:1px solid #e5e7eb; border-radius:20px; padding:24px; margin-bottom:20px; box-shadow:0 12px 30px rgba(15,23,42,.08); }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+    .card { border:1px solid #e5e7eb; border-radius:16px; padding:18px; }
+    .callout { border-left:5px solid #0891b2; background:#cffafe; padding:14px 16px; border-radius:12px; margin:16px 0; }
+    .qa { border:1px solid #e5e7eb; border-radius:16px; padding:18px; margin-top:14px; background:#fcfcfd; }
+    .q { font-weight:700; margin-bottom:8px; }
+    pre { background:#0f172a; color:#e5e7eb; padding:16px; border-radius:14px; overflow:auto; }
+    @media (max-width: 900px) { .grid { grid-template-columns:1fr; } .hero h1 { font-size:28px; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>CyberSec RAG Agent · Phase 10 学习文档</h1>
+      <p>从“面试官会怎么追问你”这个角度，理解当前项目为什么在 <strong>Phase 10</strong> 才真正拥有“可量化、可比较、可回归”的工程能力，以及为什么 golden dataset、Recall@K、MRR、citation accuracy、refusal accuracy 是这个阶段的核心关键词。</p>
+      <span class="badge">当前阶段：Phase 10</span>
+      <span class="badge">重点：eval dataset / eval run / Recall@K / MRR / citation accuracy / refusal accuracy</span>
+      <span class="badge">项目状态：Phase 5-10 已全部落地到代码层</span>
+    </section>
+
+    <section class="panel">
+      <h2>1. 一句话定义当前项目状态</h2>
+      <div class="callout">
+        这是一个面向网络安全资料的 RAG 后端项目。到 Phase 10，它已经不只是“能检索、能回答、能更新”，还开始支持<strong>用固定数据集重复跑评测，并把 run 级 / item 级结果持久化</strong>，从而判断系统改动到底是变好了还是变差了。
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>2. Phase 10 相比 Phase 9 本质升级了什么</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Phase 9</h3>
+          <p>重点是“长期维护能力”：replace、chunk diff、向量复用、soft delete，让知识库内容可以持续演进。</p>
+        </div>
+        <div class="card">
+          <h3>Phase 10</h3>
+          <p>重点是“量化验证能力”：固定输入、固定指标、持久化结果，让系统迭代不再只靠主观感觉判断。</p>
+        </div>
+      </div>
+      <div class="callout">
+        面试里要强调：<strong>Phase 9 解决的是内容怎么维护，Phase 10 解决的是效果怎么证明。</strong>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>3. 当前到底实现了哪些内容</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>golden dataset 文件</h3>
+          <p><code>eval/golden_dataset.jsonl</code> 定义了可重复执行的评测样本，而不是临时手工提问。</p>
+        </div>
+        <div class="card">
+          <h3>评测主服务</h3>
+          <p><code>backend/app/services/eval_service.py</code> 负责加载数据集、执行主链路、计算指标并写回数据库。</p>
+        </div>
+        <div class="card">
+          <h3>运行接口</h3>
+          <p><code>POST /api/v1/eval/run</code> 能触发一轮评测并返回 run 摘要。</p>
+        </div>
+        <div class="card">
+          <h3>指标计算</h3>
+          <p>当前覆盖 <code>Recall@K</code>、<code>MRR</code>、<code>citation accuracy</code>、<code>refusal accuracy</code>、平均延迟。</p>
+        </div>
+        <div class="card">
+          <h3>结果持久化</h3>
+          <p>会写入 <code>eval_datasets</code>、<code>eval_dataset_items</code>、<code>eval_runs</code>、<code>eval_run_items</code>，支持长期对比。</p>
+        </div>
+        <div class="card">
+          <h3>安全边界纳入评测</h3>
+          <p>拒答不再只是线上行为要求，而是被纳入 <code>refusal accuracy</code> 指标进行量化。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>4. Phase 10 主链路怎么讲清楚</h2>
+      <pre><code>POST /api/v1/eval/run
+  -> load golden_dataset.jsonl
+  -> bootstrap eval_dataset / eval_dataset_items
+  -> create eval_run(status=running)
+  -> for each sample:
+       -> safety_guard
+       -> intent / expansion / rewrite
+       -> hybrid retrieve
+       -> answer_generator
+       -> citation_checker
+       -> compute recall_hit / reciprocal_rank / refusal_triggered
+       -> persist eval_run_item
+  -> aggregate Recall@K / MRR / citation accuracy / refusal accuracy / latency
+  -> update eval_run(status=completed)
+  -> return run summary</code></pre>
+    </section>
+
+    <section class="panel">
+      <h2>5. 面试官最爱追问的设计点</h2>
+      <div class="qa">
+        <div class="q">为什么评测样本要放在 JSONL，而不是写死在测试函数里？</div>
+        <div class="a">因为 JSONL 更适合持续追加、版本管理与批量回放。评测应该是“数据驱动”，而不是“代码驱动”。</div>
+      </div>
+      <div class="qa">
+        <div class="q">为什么要同时统计 Recall@K 和 MRR？</div>
+        <div class="a">Recall@K 只回答“有没有找到”，MRR 进一步回答“找到得靠不靠前”。一个系统可能 Recall 不差，但相关证据总排得很后面，这会拖累最终回答质量。</div>
+      </div>
+      <div class="qa">
+        <div class="q">为什么 refusal accuracy 在这个项目里这么重要？</div>
+        <div class="a">因为这是安全领域 RAG。项目不仅要回答法规、标准、教材问题，还必须拒绝真实攻击、绕过和入侵类请求，所以安全边界本身就必须被量化验证。</div>
+      </div>
+      <div class="qa">
+        <div class="q">为什么 citation accuracy 不能直接等价于“答案正确率”？</div>
+        <div class="a">因为 citation accuracy 更像 groundedness 的最低门槛：它验证“回答是否真的有证据支撑”。答案是否完整、是否覆盖用户问题，还需要更细粒度的指标继续补充。</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>6. 你需要会的验证命令</h2>
+      <pre><code>pytest backend/tests/test_eval_service.py
+pytest backend/tests/test_eval_api.py -m integration</code></pre>
+    </section>
+
+    <section class="panel">
+      <h2>7. 现在明确还没做什么</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>可视化评测看板</h3>
+          <p>当前只有 API 和数据库持久化，还没有 dashboard 或趋势图页面。</p>
+        </div>
+        <div class="card">
+          <h3>更丰富的数据集管理</h3>
+          <p>当前先落地默认 golden dataset，没有做复杂的多数据集运营能力。</p>
+        </div>
+        <div class="card">
+          <h3>更多答案质量指标</h3>
+          <p>当前覆盖了核心 MVP 指标，但还没有加入更细的语义评分、人工标注工作流等。</p>
+        </div>
+        <div class="card">
+          <h3>运行时验证</h3>
+          <p>代码层已经补齐，但仍需要在项目专用环境里真正跑迁移和测试，完成最终执行验证。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>8. 你该怎么口述这个项目</h2>
+      <div class="callout">
+        一个很适合面试里的说法是：前几个阶段把安全知识库的上传、切分、索引、检索、回答、增量更新都打通了；而 Phase 10 进一步解决“系统迭代后如何证明自己更好”这个工程问题。项目现在可以用固定 golden dataset 跑完整主链路，统计 Recall@K、MRR、citation accuracy、refusal accuracy，并把结果存入数据库，为后续优化提供可比较依据。
+      </div>
+    </section>
+  </div>
+</body>
+</html>

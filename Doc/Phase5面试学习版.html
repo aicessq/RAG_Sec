@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phase 5 学习文档｜从面试官提问角度理解当前项目</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --brand: #1d4ed8;
+      --brand-soft: #dbeafe;
+      --ok: #166534;
+      --warn: #92400e;
+      --danger: #991b1b;
+      --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    .container {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 48px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 48%, #0f766e 100%);
+      color: #fff;
+      border-radius: 24px;
+      padding: 40px 32px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      margin: 0 0 12px;
+      font-size: 34px;
+      line-height: 1.25;
+    }
+
+    .hero p { margin: 8px 0; color: rgba(255,255,255,0.93); }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .badge {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.18);
+      font-size: 14px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 290px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .toc, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .toc {
+      position: sticky;
+      top: 20px;
+      padding: 20px;
+    }
+
+    .toc h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .toc a {
+      display: block;
+      text-decoration: none;
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 10px;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .toc a:hover {
+      background: #eff6ff;
+      color: var(--brand);
+    }
+
+    .content { display: grid; gap: 20px; }
+    .panel { padding: 24px; }
+    .panel h2 { margin-top: 0; font-size: 24px; }
+    .panel h3 { margin-top: 24px; margin-bottom: 10px; font-size: 18px; }
+    .lead { color: var(--muted); margin-top: -4px; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      background: #fff;
+    }
+
+    .card h4 { margin: 0 0 8px; font-size: 17px; }
+
+    .callout {
+      border-left: 5px solid var(--brand);
+      background: var(--brand-soft);
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin: 16px 0;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .done { background: #dcfce7; color: var(--ok); }
+    .todo { background: #fef3c7; color: var(--warn); }
+    .no { background: #fee2e2; color: var(--danger); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f9fafb;
+      color: #374151;
+      font-size: 14px;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    pre {
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 16px;
+      border-radius: 14px;
+      overflow-x: auto;
+      font-size: 13px;
+      font-family: Consolas, Monaco, "Courier New", monospace;
+    }
+
+    code {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+    }
+
+    .qa {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      margin-top: 14px;
+      background: #fcfcfd;
+    }
+
+    .qa .q { font-weight: 700; margin-bottom: 8px; }
+    .qa .a { color: #374151; }
+
+    .footer-note { color: var(--muted); font-size: 14px; }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .toc { position: static; }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>CyberSec RAG Agent · Phase 5 学习文档</h1>
+      <p>从“面试官会怎么追问你”这个角度，理解当前项目在 <strong>Phase 5</strong> 到底已经具备了什么能力、为什么只索引 child chunk、以及为什么现在仍然不能说查询链路已经完成。</p>
+      <div class="badge-row">
+        <span class="badge">当前阶段：Phase 5</span>
+        <span class="badge">重点：embedding / reranker 封装 / Qdrant / FTS / payload / 自动建索引</span>
+        <span class="badge">仍未进入：query retrieve / RRF / answer generation</span>
+      </div>
+    </section>
+
+    <div class="layout">
+      <aside class="toc">
+        <h2>目录</h2>
+        <a href="#intro">1. 一句话定义当前项目状态</a>
+        <a href="#upgrade">2. Phase 5 相比 Phase 4 升级了什么</a>
+        <a href="#implemented">3. 当前到底实现了哪些内容</a>
+        <a href="#flow">4. 建索引链路怎么讲清楚</a>
+        <a href="#design">5. 关键设计点为什么这样做</a>
+        <a href="#qa">6. 面试官高频追问与答题思路</a>
+        <a href="#verify">7. 你需要会的运行与验证命令</a>
+        <a href="#notyet">8. 现在明确还没做什么</a>
+        <a href="#talking">9. 你该怎么口述这个项目</a>
+      </aside>
+
+      <main class="content">
+        <section id="intro" class="panel">
+          <h2>1. 一句话定义当前项目状态</h2>
+          <p class="lead">面试里一个非常关键的能力，是能把“当前阶段到底完成到哪里”讲得既准确又不过度。</p>
+          <div class="callout">
+            <strong>推荐表述：</strong><br />
+            这是一个面向网络安全知识资料的 RAG 后端项目，当前已经完成到 <strong>Phase 5</strong>。系统不仅能接收文档、完成解析、清洗、结构化切分与 chunk 落库，还已经能对 <code>child chunk</code> 生成本地 embedding、写入 Qdrant、更新 PostgreSQL FTS 字段，并统一组织后续检索所需的 metadata payload。但当前仍未进入查询接口、混合召回、RRF 融合和答案生成阶段。
+          </div>
+        </section>
+
+        <section id="upgrade" class="panel">
+          <h2>2. Phase 5 相比 Phase 4 升级了什么</h2>
+          <p class="lead">面试官更关注“系统能力发生了什么本质变化”，而不仅仅是“你多写了几个 service”。</p>
+          <div class="grid-3">
+            <div class="card">
+              <h4>Phase 3 <span class="status done">已完成</span></h4>
+              <p>解决文件解析、页码保留、基础清洗和失败状态回写问题。</p>
+            </div>
+            <div class="card">
+              <h4>Phase 4 <span class="status done">已完成</span></h4>
+              <p>解决结构化切分、parent-child 关系、chunk_hash 和 chunk 落库问题。</p>
+            </div>
+            <div class="card">
+              <h4>Phase 5 <span class="status done">当前重点</span></h4>
+              <p>解决“数据库里的 child chunk 如何真正变成检索系统可用索引数据”问题。</p>
+            </div>
+          </div>
+
+          <h3>本质升级</h3>
+          <ul>
+            <li>系统从“只有结构化 chunk 数据”升级为“已经具备可检索索引数据”。</li>
+            <li>worker 不再止步于 chunk 落库，而是继续完成 embedding、Qdrant 和 FTS 建立。</li>
+            <li>Phase 6 的 retrieval 终于有了真实可用的底层索引输入。</li>
+          </ul>
+        </section>
+
+        <section id="implemented" class="panel">
+          <h2>3. 当前到底实现了哪些内容</h2>
+          <p class="lead">你要能把“做了什么”和“故意没做什么”分得非常清楚。</p>
+
+          <h3>已完成模块</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>模块</th>
+                <th>当前状态</th>
+                <th>你在面试里要怎么描述</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>本地 embedding_service</td>
+                <td><span class="status done">已完成</span></td>
+                <td>已经有统一的本地向量化封装接口，可为 child chunk 生成固定维度 embedding。</td>
+              </tr>
+              <tr>
+                <td>本地 reranker 封装</td>
+                <td><span class="status done">已完成</span></td>
+                <td>虽然还没接入查询链路，但本地 reranker 模型接口已经真实存在、可测试。</td>
+              </tr>
+              <tr>
+                <td>Qdrant vector_store</td>
+                <td><span class="status done">已完成</span></td>
+                <td>能够初始化 collection、upsert child chunk、并按 chunk_id 回查写入结果。</td>
+              </tr>
+              <tr>
+                <td>PostgreSQL keyword_store</td>
+                <td><span class="status done">已完成</span></td>
+                <td>已经打通 child chunk 的 <code>search_tsv</code> 更新链路。</td>
+              </tr>
+              <tr>
+                <td>index_service 编排层</td>
+                <td><span class="status done">已完成</span></td>
+                <td>统一负责 child chunk 过滤、payload 组装、embedding、Qdrant 与 FTS 顺序编排。</td>
+              </tr>
+              <tr>
+                <td>worker 自动建索引</td>
+                <td><span class="status done">已完成</span></td>
+                <td>上传后的异步 ingest 链路已能从落库继续推进到 child chunk 自动建索引。</td>
+              </tr>
+              <tr>
+                <td>查询 / 检索 API</td>
+                <td><span class="status no">未做</span></td>
+                <td>仍严格留在 Phase 6 及之后。</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>涉及到的关键文件</h3>
+          <div class="grid-2">
+            <div class="card">
+              <h4><code>backend/app/services/embedding_service.py</code></h4>
+              <p>Phase 5 的向量输入封装：统一本地模型加载与单条 / 批量 embedding 接口。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/app/services/reranker.py</code></h4>
+              <p>为后续查询链路预留的本地 reranker 服务封装。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/app/services/vector_store.py</code></h4>
+              <p>负责 Qdrant collection 初始化、point upsert 与按 chunk_id 回查。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/app/services/keyword_store.py</code></h4>
+              <p>负责 child chunk 的 PostgreSQL <code>search_tsv</code> 写入。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/app/services/index_service.py</code></h4>
+              <p>Phase 5 核心编排层：只索引 child chunk，并统一构造 payload。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/app/workers/ingest_worker.py</code></h4>
+              <p>把解析 → 清洗 → 切分 → 落库 → 索引整条链路串起来。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="flow" class="panel">
+          <h2>4. 建索引链路怎么讲清楚</h2>
+          <p class="lead">真正体现理解深度的，不是“我做了 embedding”，而是你能把索引建立讲成一个完整闭环。</p>
+
+          <h3>推荐你背下来的处理顺序</h3>
+          <pre><code>客户端上传文件
+  -> upload_service 保存原始文件并创建 document/version/task
+  -> worker 收到 ingest_document_task
+  -> parser_service 解析原始文件
+  -> cleaner_service 做基础清洗
+  -> chunk_service 按 doc_type 选择 chunker
+  -> 生成 parent / child chunk
+  -> build_chunk_records 映射为 ORM 可落库记录
+  -> 写入 PostgreSQL chunks 表
+  -> index_service 过滤 child chunk
+  -> embedding_service 生成向量
+  -> vector_store upsert 到 Qdrant
+  -> keyword_store 更新 PostgreSQL search_tsv
+  -> 更新 ingest_task 状态</code></pre>
+
+          <h3>为什么 Phase 5 很关键</h3>
+          <div class="callout">
+            因为从这一阶段开始，系统第一次拥有了“真正可被检索系统召回的索引数据”。没有 Phase 5，Phase 4 的 chunk 仍然只是数据库里的结构化文本，后续 retrieval 根本没有底层索引可用。
+          </div>
+
+          <h3>为什么只索引 child chunk</h3>
+          <p>因为后续检索阶段需要更细粒度的召回单元，child 更适合做向量检索和关键词检索；parent 则更适合在命中后回填更大上下文。所以当前不是“把所有 chunk 一起索引”，而是从现在开始就严格区分“谁用于召回、谁用于回填”。</p>
+        </section>
+
+        <section id="design" class="panel">
+          <h2>5. 关键设计点为什么这样做</h2>
+          <p class="lead">面试里最常见的追问，几乎都在“为什么”上。</p>
+
+          <h3>1）为什么 embedding 与 reranker 都要本地加载？</h3>
+          <p>因为规格明确要求第一版使用本地 Qwen Embedding 和本地 Qwen3 Reranker，而不是远程 API 或 OpenAI-compatible 代理。这样后续部署和数据边界更可控，也更符合私有知识库场景。</p>
+
+          <h3>2）为什么当前只把 reranker 做成服务封装，而不接入查询链路？</h3>
+          <p>因为 Phase 5 的职责是“把索引相关底座补齐”，而不是提前做 retrieval。当前先保证 reranker 模型能真实加载、真实调用，等到 Phase 6 再把它接进召回排序流程。</p>
+
+          <h3>3）为什么 `index_service` 必须单独存在？</h3>
+          <p>因为 worker 应该只负责驱动主流程，不应该自己散落地拼 embedding、Qdrant 和 FTS 细节。把这三步集中到 `index_service` 后，payload 结构更统一，也更容易测试调用顺序和边界规则。</p>
+
+          <h3>4）为什么 Qdrant payload 里要带 `is_active`？</h3>
+          <p>因为后续 delete / replace / 版本切换都会依赖一致的可见性控制。如果只有数据库里有 `is_active`，但向量侧没有，后续过滤就会出现状态不一致的问题。</p>
+
+          <h3>5）为什么 `search_tsv` 现在就要更新？</h3>
+          <p>因为 Phase 1 只有字段和索引结构，不代表关键词索引链路已经真的完成。Phase 5 必须把写入逻辑补齐，这样 Phase 6 才能直接在现成索引上做 FTS 查询。</p>
+
+          <h3>6）为什么现在完成了索引，还不能说“查询能力完成”？</h3>
+          <p>因为当前只完成了“可检索的数据准备”，还没有实现 query API、向量搜索接口、FTS 查询接口、RRF、metadata filter、query rewrite 和 answer generation。所以当前完成只能理解为“Phase 5 阶段目标完成”。</p>
+        </section>
+
+        <section id="qa" class="panel">
+          <h2>6. 面试官高频追问与答题思路</h2>
+          <p class="lead">下面这些问题，就是你讲到当前阶段时大概率会被追问的点。</p>
+
+          <div class="qa">
+            <div class="q">Q1：你们现在的 embedding 是怎么接的？</div>
+            <div class="a">A：当前是独立的本地 embedding_service 封装，统一负责模型目录加载、单条 / 批量向量化和维度校验。worker 不直接接触底层模型细节，而是通过 index_service 间接调用。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q2：为什么只索引 child chunk，不把 parent 也一起放进 Qdrant？</div>
+            <div class="a">A：因为 child 是未来的细粒度召回单元，parent 是命中后回填更大上下文的辅助单元。如果 parent 也一起索引，会让召回粒度混乱，并破坏后续引用与上下文设计。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q3：为什么还要单独维护 PostgreSQL FTS？</div>
+            <div class="a">A：因为后续系统不是纯向量检索，而是向量 + 关键词混合检索。FTS 对法规编号、标准编号、英文术语、CVE 编号等精确文本信号很重要，所以 Phase 5 必须先把 `search_tsv` 更新链路打通。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q4：reranker 现在已经在实际查询里用了吗？</div>
+            <div class="a">A：还没有。当前只完成了本地 reranker 模型封装和基本调用能力，真正接到查询链路属于 Phase 6 的范围。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q5：你们现在已经能回答用户问题了吗？</div>
+            <div class="a">A：还不能准确这么说。当前只是把索引底座准备好了，查询接口、混合召回、排序和答案生成都还没有接起来，所以只能说“系统已经具备后续检索所需索引能力”。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q6：worker 为什么要继续负责建索引？</div>
+            <div class="a">A：因为 ingest 链路的语义本来就是“把上传文件变成可用知识单元”。Phase 4 把文本变成 chunk，Phase 5 就顺着同一条异步链路把 child chunk 变成真正可检索索引，这样流程边界最清晰，也最符合分阶段演进。</div>
+          </div>
+        </section>
+
+        <section id="verify" class="panel">
+          <h2>7. 你需要会的运行与验证命令</h2>
+          <p class="lead">你不一定已经实际跑过所有命令，但你至少要知道 Phase 5 的理论验收路径。</p>
+
+          <h3>依赖安装</h3>
+          <pre><code>pip install -e ".[test]"</code></pre>
+
+          <h3>执行迁移</h3>
+          <pre><code>cd backend
+alembic upgrade head</code></pre>
+
+          <h3>运行 Phase 5 测试</h3>
+          <pre><code>pytest backend/tests/test_embedding_service.py
+pytest backend/tests/test_reranker.py
+pytest backend/tests/test_vector_store.py
+pytest backend/tests/test_index_service.py
+pytest backend/tests/test_keyword_store.py -m integration
+pytest backend/tests/test_ingest_worker.py -m integration</code></pre>
+
+          <h3>运行默认测试</h3>
+          <pre><code>pytest</code></pre>
+
+          <h3>手动验证思路</h3>
+          <pre><code>上传一个法规 / 教材 / 普通文本样例
+  -> 确认 ingest_task 进入 processing
+  -> worker 完成解析、清洗、切分与 chunk 落库
+  -> 检查 PostgreSQL chunks 表中的 child chunk
+  -> 检查 Qdrant collection 中是否有 child chunk point
+  -> 检查 PostgreSQL search_tsv 是否已更新
+  -> 验证 payload 中的 chunk_id / doc_title / article_no / is_active / parent_chunk_id</code></pre>
+
+          <p class="footer-note">注意：当前 worker 成功只代表 Phase 5 的索引建立成功，不代表 query/retrieve/answer 能力已经完成。</p>
+        </section>
+
+        <section id="notyet" class="panel">
+          <h2>8. 现在明确还没做什么</h2>
+          <p class="lead">面试时越能把边界讲清楚，越能体现你是真的理解项目而不是在“虚报完成度”。</p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>能力</th>
+                <th>当前状态</th>
+                <th>为什么还没做</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>向量检索 search API</td>
+                <td><span class="status no">未实现</span></td>
+                <td>这是 Phase 6 的核心内容。</td>
+              </tr>
+              <tr>
+                <td>PostgreSQL FTS 查询接口</td>
+                <td><span class="status no">未实现</span></td>
+                <td>当前只完成了索引写入，不做查询侧封装。</td>
+              </tr>
+              <tr>
+                <td>RRF / hybrid retrieval</td>
+                <td><span class="status no">未实现</span></td>
+                <td>属于后续召回编排阶段。</td>
+              </tr>
+              <tr>
+                <td>metadata filter builder</td>
+                <td><span class="status no">未实现</span></td>
+                <td>属于查询理解与检索过滤阶段。</td>
+              </tr>
+              <tr>
+                <td>query rewrite / answer generation</td>
+                <td><span class="status no">未实现</span></td>
+                <td>必须建立在真实 retrieval 之上。</td>
+              </tr>
+              <tr>
+                <td>replace / chunk diff 增量更新</td>
+                <td><span class="status no">未实现</span></td>
+                <td>虽然 hash 和索引基础已准备好，但 replace/diff 仍在后续 Phase。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="talking" class="panel">
+          <h2>9. 你该怎么口述这个项目</h2>
+          <p class="lead">最后给你一个适合面试场景的口述模板。</p>
+          <div class="callout">
+            我做的是一个网络安全领域 RAG 知识库后端项目。这个项目是按 Phase 逐步推进的：先完成工程骨架和基础设施联通，再完成数据库地基、上传入口、解析清洗和结构化切分。当前推进到 Phase 5，核心是把数据库里的 child chunk 进一步变成真正可检索的索引数据。现在系统已经能对 child chunk 生成本地 embedding，写入 Qdrant，同时更新 PostgreSQL 的 `search_tsv` 字段，并统一维护后续检索要用的 metadata payload。这样虽然还没有进入 query/retrieve 和答案生成阶段，但已经把后续检索系统最关键的索引底层准备好了。
+          </div>
+          <p class="footer-note">如果你把上面这段讲顺，再能回答“为什么只索引 child”“为什么 Phase 5 还要提前做 reranker 封装”“为什么现在就更新 search_tsv”“为什么完成索引还不等于完成查询链路”，基本就能把当前阶段讲得很扎实了。</p>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

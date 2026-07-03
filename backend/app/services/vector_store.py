@@ -1,7 +1,8 @@
 """Qdrant 向量存储封装。
 
 Phase 5 负责把 child chunk 的向量与 payload 写入 Qdrant。
-本模块只提供“索引写入能力”，不提前实现查询接口。
+Phase 6 在此基础上继续补齐向量检索能力。
+本模块只提供“索引写入 + 检索”能力，不提前实现最终问答接口。
 """
 
 from __future__ import annotations
@@ -13,12 +14,28 @@ from uuid import UUID
 
 from app.config import get_settings
 from app.dependencies import get_qdrant_client
+from app.services.fusion import RetrievalHit
+from app.services.metadata_filter import MetadataFilter, matches_payload_filters
 
 try:  # pragma: no cover - 依赖安装与否取决于运行环境
-    from qdrant_client.http.models import Distance, PointStruct, VectorParams
+    from qdrant_client.http.models import (
+        Distance,
+        FieldCondition,
+        Filter,
+        MatchAny,
+        MatchValue,
+        PointStruct,
+        Range,
+        VectorParams,
+    )
 except ImportError:  # pragma: no cover
     Distance = None  # type: ignore[assignment]
+    FieldCondition = None  # type: ignore[assignment]
+    Filter = None  # type: ignore[assignment]
+    MatchAny = None  # type: ignore[assignment]
+    MatchValue = None  # type: ignore[assignment]
     PointStruct = None  # type: ignore[assignment]
+    Range = None  # type: ignore[assignment]
     VectorParams = None  # type: ignore[assignment]
 
 
@@ -37,6 +54,10 @@ class QdrantClientProtocol(Protocol):
 
     def retrieve(self, *, collection_name: str, ids: list[str], with_payload: bool, with_vectors: bool) -> list[object]: ...
 
+    def query_points(self, *, collection_name: str, query: list[float], limit: int, query_filter: object | None, with_payload: bool) -> object: ...
+
+    def set_payload(self, *, collection_name: str, payload: dict[str, Any], points: list[str], wait: bool) -> object: ...
+
 
 @dataclass(slots=True)
 class VectorPoint:
@@ -48,7 +69,7 @@ class VectorPoint:
 
 
 class QdrantVectorStore:
-    """Qdrant 写入封装。"""
+    """Qdrant 写入与检索封装。"""
 
     def __init__(
         self,
@@ -87,7 +108,7 @@ class QdrantVectorStore:
             collection_name=self.collection_name,
             vectors_config=VectorParams(
                 size=self.vector_size,
-                distance=getattr(Distance, self.distance_metric),
+                distance=getattr(Distance, self.distance_metric, getattr(Distance, self.distance_metric.upper())),
             ),
         )
 
@@ -124,3 +145,100 @@ class QdrantVectorStore:
             with_payload=True,
             with_vectors=True,
         )
+
+    def search(self, query_vector: list[float], *, top_k: int = 30, filters: MetadataFilter | None = None) -> list[RetrievalHit]:
+        """按 query 向量检索 child chunk。"""
+        effective_filters = filters or MetadataFilter()
+        query_filter = self._build_qdrant_filter(effective_filters)
+        response = self.client.query_points(
+            collection_name=self.collection_name,
+            query=query_vector,
+            limit=top_k,
+            query_filter=query_filter,
+            with_payload=True,
+        )
+        points = getattr(response, "points", response)
+        results: list[RetrievalHit] = []
+        for point in points:
+            payload = dict(getattr(point, "payload", {}) or {})
+            if not matches_payload_filters(payload, effective_filters):
+                continue
+            results.append(
+                RetrievalHit(
+                    chunk_id=str(payload.get("chunk_id") or getattr(point, "id")),
+                    score=float(getattr(point, "score", 0.0)),
+                    source="vector",
+                    chunk_text=str(payload.get("chunk_text") or payload.get("text") or ""),
+                    document_id=str(payload.get("document_id") or ""),
+                    version_id=str(payload.get("version_id") or ""),
+                    doc_title=str(payload.get("doc_title") or ""),
+                    doc_type=str(payload.get("doc_type") or ""),
+                    chapter=payload.get("chapter"),
+                    section=payload.get("section"),
+                    article_no=payload.get("article_no"),
+                    page_start=payload.get("page_start"),
+                    page_end=payload.get("page_end"),
+                    parent_chunk_id=payload.get("parent_chunk_id"),
+                    version_status=payload.get("version_status"),
+                    is_active=bool(payload.get("is_active", True)),
+                    security_domain=list(payload.get("security_domain") or []),
+                    metadata=payload,
+                )
+            )
+        return results[:top_k]
+
+    def set_chunks_active(self, chunk_ids: Sequence[str | UUID], *, is_active: bool) -> int:
+        """批量更新 Qdrant payload 中的 is_active 可见性。"""
+        normalized_ids = [str(chunk_id) for chunk_id in chunk_ids]
+        if not normalized_ids:
+            return 0
+        self.client.set_payload(
+            collection_name=self.collection_name,
+            payload={"is_active": is_active},
+            points=normalized_ids,
+            wait=True,
+        )
+        return len(normalized_ids)
+
+    def set_chunks_current_version(self, chunk_ids: Sequence[str | UUID], *, is_current_version: bool) -> int:
+        """批量更新 Qdrant payload 中的 current version 可见性。"""
+        normalized_ids = [str(chunk_id) for chunk_id in chunk_ids]
+        if not normalized_ids:
+            return 0
+        self.client.set_payload(
+            collection_name=self.collection_name,
+            payload={"is_current_version": is_current_version},
+            points=normalized_ids,
+            wait=True,
+        )
+        return len(normalized_ids)
+
+    def _build_qdrant_filter(self, filters: MetadataFilter) -> object | None:
+        """把显式 metadata filter 映射到 Qdrant query_filter。"""
+        if Filter is None or FieldCondition is None:
+            return None
+
+        conditions = [FieldCondition(key="chunk_type", match=MatchValue(value="child"))]
+        if filters.is_active is not None:
+            conditions.append(FieldCondition(key="is_active", match=MatchValue(value=filters.is_active)))
+        if filters.current_version_only:
+            conditions.append(FieldCondition(key="is_current_version", match=MatchValue(value=True)))
+        if filters.doc_type:
+            conditions.append(FieldCondition(key="doc_type", match=MatchAny(any=filters.doc_type)))
+        if filters.doc_title:
+            conditions.append(FieldCondition(key="doc_title", match=MatchAny(any=filters.doc_title)))
+        if filters.version_status:
+            conditions.append(FieldCondition(key="version_status", match=MatchAny(any=filters.version_status)))
+        if filters.security_domain:
+            conditions.append(FieldCondition(key="security_domain", match=MatchAny(any=filters.security_domain)))
+        if filters.chapter:
+            conditions.append(FieldCondition(key="chapter", match=MatchAny(any=filters.chapter)))
+        if filters.section:
+            conditions.append(FieldCondition(key="section", match=MatchAny(any=filters.section)))
+        if filters.article_no:
+            conditions.append(FieldCondition(key="article_no", match=MatchAny(any=filters.article_no)))
+        if filters.page_start is not None:
+            conditions.append(FieldCondition(key="page_start", range=Range(gte=filters.page_start)))
+        if filters.page_end is not None:
+            conditions.append(FieldCondition(key="page_end", range=Range(lte=filters.page_end)))
+        return Filter(must=conditions)

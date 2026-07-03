@@ -25,9 +25,10 @@ from __future__ import annotations
 import logging
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import api_router
+from app.api import documents, eval, health, query, upload
 from app.config import get_settings
 from app.logging_config import setup_logging
 
@@ -38,12 +39,49 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title=settings.app_name,
-    description="网络安全领域 RAG 知识库系统（当前已完成到 Phase 2：上传入口与异步任务入口）",
+    description="网络安全领域 RAG 知识库系统（当前已完成到 Phase 10：评测体系与量化指标接口）",
     version="0.1.0",
 )
 
-# 业务路由统一挂在 /api/v1 前缀下（后续 Phase 的接口都遵循此前缀）
-app.include_router(api_router, prefix="/api/v1")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.frontend_allow_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# FastAPI 0.139 当前环境下，先聚合 APIRouter 再 include 的写法会保留 _IncludedRouter，
+# 没有在 app.routes 中展开成真实 APIRoute；因此这里显式逐个注册业务 router。
+def _include_router_expanded(router, *, prefix: str = "") -> None:
+    """兼容当前 FastAPI 版本，显式展开 APIRouter 中的 APIRoute。"""
+    for route in router.routes:
+        if not hasattr(route, "endpoint") or not hasattr(route, "methods"):
+            continue
+        app.add_api_route(
+            f"{prefix}{route.path}",
+            route.endpoint,
+            methods=list(route.methods or []),
+            response_model=getattr(route, "response_model", None),
+            status_code=getattr(route, "status_code", None),
+            tags=list(getattr(route, "tags", []) or []),
+            dependencies=list(getattr(route, "dependencies", []) or []),
+            summary=getattr(route, "summary", None),
+            description=getattr(route, "description", None),
+            response_description=getattr(route, "response_description", "Successful Response"),
+            responses=getattr(route, "responses", None),
+            deprecated=getattr(route, "deprecated", None),
+            operation_id=getattr(route, "operation_id", None),
+            name=getattr(route, "name", None),
+            include_in_schema=getattr(route, "include_in_schema", True),
+        )
+
+
+_include_router_expanded(health.router, prefix="/api/v1")
+_include_router_expanded(upload.router, prefix="/api/v1")
+_include_router_expanded(documents.router, prefix="/api/v1")
+_include_router_expanded(query.router, prefix="/api/v1")
+_include_router_expanded(eval.router, prefix="/api/v1")
 
 
 # ---- 根路径健康检查 ----

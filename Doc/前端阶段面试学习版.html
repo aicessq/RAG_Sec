@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>前端阶段学习文档｜CyberSec RAG Agent</title>
+  <style>
+    body { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; margin: 0; background: #f4f7fb; color: #1f2937; line-height: 1.7; }
+    .container { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 48px; }
+    .hero { background: linear-gradient(135deg,#0f172a 0%,#1d4ed8 40%,#0f766e 100%); color: #fff; border-radius: 24px; padding: 40px 32px; margin-bottom: 24px; }
+    .hero h1 { margin: 0 0 12px; font-size: 34px; }
+    .badge { display:inline-block; margin:6px 8px 0 0; padding:8px 12px; border-radius:999px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.18); font-size:14px; }
+    .panel { background:#fff; border:1px solid #e5e7eb; border-radius:20px; padding:24px; margin-bottom:20px; box-shadow:0 12px 30px rgba(15,23,42,.08); }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+    .card { border:1px solid #e5e7eb; border-radius:16px; padding:18px; }
+    .callout { border-left:5px solid #1d4ed8; background:#dbeafe; padding:14px 16px; border-radius:12px; margin:16px 0; }
+    .qa { border:1px solid #e5e7eb; border-radius:16px; padding:18px; margin-top:14px; background:#fcfcfd; }
+    .q { font-weight:700; margin-bottom:8px; }
+    pre { background:#0f172a; color:#e5e7eb; padding:16px; border-radius:14px; overflow:auto; }
+    @media (max-width: 900px) { .grid { grid-template-columns:1fr; } .hero h1 { font-size:28px; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>CyberSec RAG Agent · 前端阶段学习文档</h1>
+      <p>这份文档从“面试官会怎么追问你”这个角度，帮助你解释为什么当前项目需要补一个独立前端，以及这个前端阶段到底实现了哪些真实能力。</p>
+      <span class="badge">阶段主题：Frontend MVP</span>
+      <span class="badge">技术选择：React + TypeScript + Vite</span>
+      <span class="badge">目标：让后端 API 变成可操作系统原型</span>
+    </section>
+
+    <section class="panel">
+      <h2>1. 一句话定义这次前端阶段</h2>
+      <div class="callout">
+        这次不是“再补一个漂亮页面”，而是把原本只有 Swagger 的后端项目，升级成一个<strong>可运行、可演示、可继续扩展</strong>的完整系统原型：用户现在可以通过真实页面去看状态、上传文档、调试检索、调试 rewrite、执行问答、运行 eval。
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>2. 为什么当前项目需要前端</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>之前的状态</h3>
+          <p>项目已经有完整后端能力，但最直观入口主要还是 Swagger 和接口调试，不利于非后端同学体验。</p>
+        </div>
+        <div class="card">
+          <h3>现在的状态</h3>
+          <p>新增独立前端后，系统核心链路都有可视化操作入口，更适合联调、演示和面试展示。</p>
+        </div>
+      </div>
+      <div class="callout">
+        面试里可以强调：<strong>补前端不是为了“做全栈炫技”，而是为了让后端能力能被真实操作和真实展示。</strong>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>3. 这次到底实现了哪些页面</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Dashboard</h3>
+          <p>查看后端存活状态、依赖就绪状态，以及前端当前连接的 API 地址。</p>
+        </div>
+        <div class="card">
+          <h3>Upload</h3>
+          <p>提交文件和基础元数据，展示 <code>document_id</code>、<code>version_id</code>、<code>task_id</code> 或结构化错误。</p>
+        </div>
+        <div class="card">
+          <h3>Retrieve</h3>
+          <p>对接检索调试接口，展示 chunk 列表、标题、类型、分数、页码和 chunk 文本。</p>
+        </div>
+        <div class="card">
+          <h3>Rewrite</h3>
+          <p>展示 safety、intent、expanded_terms、rewritten_query 等 query 理解结果。</p>
+        </div>
+        <div class="card">
+          <h3>Answer</h3>
+          <p>展示最终答案、引用、confidence、evidence_status，并区分 blocked / refuse / redirect。</p>
+        </div>
+        <div class="card">
+          <h3>Eval</h3>
+          <p>触发评测并展示 run_id、Recall@K、MRR、citation_accuracy、refusal_accuracy 等指标。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>4. 为什么选 React + TypeScript + Vite</h2>
+      <div class="qa">
+        <div class="q">为什么不用更重的前端方案？</div>
+        <div class="a">因为目标是前端 MVP，可运行、可演示、可扩展优先。React + TypeScript + Vite 足够现代，也不会在状态管理和脚手架上引入过多复杂度。</div>
+      </div>
+      <div class="qa">
+        <div class="q">为什么要用 TypeScript？</div>
+        <div class="a">因为当前前端不是纯展示页，而是直接消费后端 JSON 结构。TypeScript 能把 query / answer / eval / upload 的返回结构明确下来，减少接口联调中的字段错误。</div>
+      </div>
+      <div class="qa">
+        <div class="q">为什么用 Vite？</div>
+        <div class="a">Vite 启动快、配置轻，适合给现有后端仓库快速补一个现代前端工程，而不需要引入很重的构建体系。</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>5. 前端工程结构怎么讲</h2>
+      <pre><code>frontend/
+  src/
+    api/         # 统一 API 请求封装
+    components/  # 布局、状态展示、JSON 展示等共享组件
+    pages/       # Dashboard / Upload / Retrieve / Rewrite / Answer / Eval
+    types/       # 基于后端返回结构定义类型
+    utils/       # 错误处理等轻量工具
+    styles/      # 全局样式
+    App.tsx
+    main.tsx</code></pre>
+      <div class="callout">
+        最适合面试里的表达是：前端没有把 fetch 散落在页面里，而是统一收敛到 <code>api/</code>；页面只关心表单、状态和结果展示，这样结构更清晰，也更利于后续继续扩展。</div>
+    </section>
+
+    <section class="panel">
+      <h2>6. 前端和后端是怎么对接的</h2>
+      <pre><code>/health
+/api/v1/health/ready
+/api/v1/documents/upload
+/api/v1/query/retrieve
+/api/v1/query/rewrite
+/api/v1/query/answer
+/api/v1/eval/run</code></pre>
+      <div class="callout">
+        这里的重点不是“接口很多”，而是前端已经把后端当前最重要的能力链路接上了：状态、上传、检索、理解、回答、评测，形成了一个完整的演示闭环。
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>7. 面试官最容易追问的问题</h2>
+      <div class="qa">
+        <div class="q">为什么没有上 Redux、Zustand 之类的全局状态管理？</div>
+        <div class="a">因为当前是 MVP，页面间共享状态非常有限，主要是表单提交和结果展示。过早引入复杂状态管理会增加维护成本，不符合这阶段“简洁可演示”的目标。</div>
+      </div>
+      <div class="qa">
+        <div class="q">为什么要专门做 Dashboard，而不是直接跳到 Upload 或 Query？</div>
+        <div class="a">因为这个项目依赖 PostgreSQL、Redis、Qdrant。Dashboard 可以先确认后端连通性与依赖就绪状态，减少后续联调时“页面报错但不知道是后端没起还是接口有问题”的成本。</div>
+      </div>
+      <div class="qa">
+        <div class="q">为什么 Answer 页面要区分 blocked / refuse / redirect？</div>
+        <div class="a">因为这是安全领域系统。前端不能只把所有返回都渲染成普通回答，否则会弱化安全边界。把这些状态显式展示出来，才符合系统设计意图。</div>
+      </div>
+      <div class="qa">
+        <div class="q">为什么 Eval 页面也要做进前端？</div>
+        <div class="a">因为 eval 是当前项目的重要工程能力。把它放进前端后，系统不仅能“回答问题”，还可以直接演示“如何评估回答系统本身的效果”。</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>8. 这次前端阶段的工程价值</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>价值 1：提高可演示性</h3>
+          <p>项目不再只能通过 Swagger 展示，而是有完整交互入口。</p>
+        </div>
+        <div class="card">
+          <h3>价值 2：提高联调效率</h3>
+          <p>前端直接消费真实接口，可以更快暴露契约问题、状态问题和错误处理问题。</p>
+        </div>
+        <div class="card">
+          <h3>价值 3：增强面试表达</h3>
+          <p>现在你不只是能讲“后端做了什么”，还能讲“这些能力如何被用户操作”。</p>
+        </div>
+        <div class="card">
+          <h3>价值 4：为后续扩展打底</h3>
+          <p>当前结构已经具备独立前端工程基础，后面继续扩展 replace/delete、任务状态、文档列表等功能会更顺。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>9. 一句话总结这次阶段</h2>
+      <div class="callout">
+        如果你要用一句话总结这次前端阶段，可以这样说：
+        <br /><br />
+        <strong>我为现有 FastAPI 后端补了一个独立的 React + TypeScript + Vite 前端 MVP，把状态检查、上传、检索、Rewrite、问答和 Eval 这些核心后端能力变成了可以直接操作和演示的系统原型。</strong>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

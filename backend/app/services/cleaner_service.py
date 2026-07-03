@@ -79,7 +79,7 @@ def remove_repeated_headers_footers(pages: list[ParsedPage]) -> list[ParsedPage]
         lines = page.text.splitlines()
         if lines and lines[0].strip() in repeated_headers:
             lines = lines[1:]
-        if lines and lines[-1].strip() in repeated_footers:
+        if lines and (lines[-1].strip() in repeated_footers or _looks_like_page_number_footer(lines[-1].strip())):
             lines = lines[:-1]
         cleaned_pages.append(
             ParsedPage(
@@ -121,6 +121,11 @@ def _should_merge_lines(previous: str, current: str) -> bool:
     if previous.endswith(("-", "/")):
         return False
     return previous[-1] not in "。！？.!?;；:" and current[:1] not in "0123456789"
+
+
+def _looks_like_page_number_footer(value: str) -> bool:
+    """识别不同页码值但相同模式的页脚。"""
+    return bool(re.fullmatch(r"第\s*\d+\s*页", value) or re.fullmatch(r"[-—–]?\s*\d+\s*[-—–]?", value))
 
 
 def _looks_like_noise(value: str) -> bool:

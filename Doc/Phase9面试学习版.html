@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phase 9 学习文档｜从面试官提问角度理解当前项目</title>
+  <style>
+    body { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; margin: 0; background: #f4f7fb; color: #1f2937; line-height: 1.7; }
+    .container { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 48px; }
+    .hero { background: linear-gradient(135deg,#0f172a 0%,#1d4ed8 45%,#9333ea 100%); color: #fff; border-radius: 24px; padding: 40px 32px; margin-bottom: 24px; }
+    .hero h1 { margin: 0 0 12px; font-size: 34px; }
+    .badge { display:inline-block; margin:6px 8px 0 0; padding:8px 12px; border-radius:999px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.18); font-size:14px; }
+    .panel { background:#fff; border:1px solid #e5e7eb; border-radius:20px; padding:24px; margin-bottom:20px; box-shadow:0 12px 30px rgba(15,23,42,.08); }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+    .card { border:1px solid #e5e7eb; border-radius:16px; padding:18px; }
+    .callout { border-left:5px solid #1d4ed8; background:#dbeafe; padding:14px 16px; border-radius:12px; margin:16px 0; }
+    .qa { border:1px solid #e5e7eb; border-radius:16px; padding:18px; margin-top:14px; background:#fcfcfd; }
+    .q { font-weight:700; margin-bottom:8px; }
+    pre { background:#0f172a; color:#e5e7eb; padding:16px; border-radius:14px; overflow:auto; }
+    @media (max-width: 900px) { .grid { grid-template-columns:1fr; } .hero h1 { font-size:28px; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>CyberSec RAG Agent · Phase 9 学习文档</h1>
+      <p>从“面试官会怎么追问你”这个角度，理解当前项目在 <strong>Phase 9</strong> 为什么开始真正具备长期维护能力，以及为什么 `chunk_hash diff`、unchanged child 复用与 soft delete 是这个阶段的关键词。</p>
+      <span class="badge">当前阶段：Phase 9</span>
+      <span class="badge">重点：replace / file_hash / chunk_hash diff / vector reuse / soft delete</span>
+      <span class="badge">下一阶段：Phase 10 eval</span>
+    </section>
+
+    <section class="panel">
+      <h2>1. 一句话定义当前项目状态</h2>
+      <div class="callout">
+        这是一个面向网络安全知识资料的 RAG 后端项目。到 Phase 9，它已经不只是“能上传、索引、检索和回答”，还开始支持<strong>文档替换、增量更新、unchanged child chunk 向量复用、软删除与索引可见性同步关闭</strong>。
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>2. Phase 9 相比 Phase 8 本质升级了什么</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Phase 8</h3>
+          <p>重点是“基于证据回答”：query/answer、parent context、answer_generator、citation_checker、query_log。</p>
+        </div>
+        <div class="card">
+          <h3>Phase 9</h3>
+          <p>重点是“长期维护能力”：已有 document 可以 replace，更新必须基于 chunk diff，删除必须让默认检索彻底看不见。</p>
+        </div>
+      </div>
+      <div class="callout">
+        面试里要强调：<strong>Phase 8 解决的是能回答，Phase 9 解决的是能持续维护而不无谓重建。</strong>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>3. 当前到底实现了哪些内容</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>replace 接口</h3>
+          <p><code>POST /api/v1/documents/{document_id}/replace</code> 为已有 document 创建新 version，而不是复用 upload 语义。</p>
+        </div>
+        <div class="card">
+          <h3>file_hash 快速比对</h3>
+          <p>新文件和 current version 的 file_hash 一致时，直接返回 <code>file_unchanged</code>，避免无意义更新。</p>
+        </div>
+        <div class="card">
+          <h3>chunk_hash diff</h3>
+          <p>child chunk 通过 <code>chunk_hash</code> 分为 added / removed / unchanged，diff 主键不是 chunk_index。</p>
+        </div>
+        <div class="card">
+          <h3>unchanged child 向量复用</h3>
+          <p>旧 child 的向量可被复制到新 version 的对应 child 记录，避免重新 embedding。</p>
+        </div>
+        <div class="card">
+          <h3>soft delete</h3>
+          <p><code>DELETE /api/v1/documents/{document_id}</code> 会把 document 标为 deleted，并关闭 chunk 与索引可见性。</p>
+        </div>
+        <div class="card">
+          <h3>Qdrant / FTS 可见性同步</h3>
+          <p>删除或 removed chunk 会同步关闭 Qdrant payload 的 <code>is_active</code>，并清空 FTS 可见性。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>4. Phase 9 主链路怎么讲清楚</h2>
+      <pre><code>replace request
+  -> check document exists
+  -> read upload bytes
+  -> compare file_hash with current version
+  -> if unchanged: return file_unchanged
+  -> else create new version + replace ingest_task
+  -> later perform chunk_hash diff on child chunks
+  -> added: embed + upsert + FTS
+  -> unchanged: copy old vector, don't re-embed
+  -> removed: is_active=false + payload invisible + FTS invisible</code></pre>
+    </section>
+
+    <section class="panel">
+      <h2>5. 面试官最爱追问的设计点</h2>
+      <div class="qa">
+        <div class="q">为什么 diff 主键一定是 chunk_hash，而不是 chunk_index？</div>
+        <div class="a">因为 chunk_index 很容易因为切分位置变化而整体偏移，导致大量误判。chunk_hash 才能表达“这段 child 文本语义是否真的没变”。</div>
+      </div>
+      <div class="qa">
+        <div class="q">为什么 unchanged child 还要在新 version 下保留数据库记录？</div>
+        <div class="a">因为数据库层面需要表达“新版本也包含这些 chunk”；但索引层面又不能重新 embedding，所以要做的是“新记录 + 旧向量复用”。</div>
+      </div>
+      <div class="qa">
+        <div class="q">为什么 soft delete 不能只改 documents.status？</div>
+        <div class="a">因为如果只改主表状态但不关闭 chunk / Qdrant / FTS，可检索结果里仍可能看到已删除文档，这会造成严重的可见性错误。</div>
+      </div>
+      <div class="qa">
+        <div class="q">为什么 replace 不能混进 upload？</div>
+        <div class="a">因为 upload 的语义是“创建新 document”，replace 的语义是“在已有 document 上创建新 version”。这两个动作的约束完全不同。</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>6. 你需要会的验证命令</h2>
+      <pre><code>pytest backend/tests/test_update_service.py
+pytest backend/tests/test_document_replace_api.py -m integration
+pytest backend/tests/test_document_delete_api.py -m integration</code></pre>
+    </section>
+
+    <section class="panel">
+      <h2>7. 现在明确还没做什么</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>自动同步法规</h3>
+          <p>当前没有实现自动从外部来源拉取或刷新法规内容。</p>
+        </div>
+        <div class="card">
+          <h3>复杂版本对比报告</h3>
+          <p>当前只实现更新链路本身，没有实现可视化版本对比页面。</p>
+        </div>
+        <div class="card">
+          <h3>完整评测体系</h3>
+          <p>后续 Phase 10 才进入 eval dataset / eval run 的真正业务化使用。</p>
+        </div>
+        <div class="card">
+          <h3>默认全库重建</h3>
+          <p>这正是 Phase 9 明确避免的路径，更新必须尽量增量化。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>8. 你该怎么口述这个项目</h2>
+      <div class="callout">
+        一个很适合面试里的说法是：前面几个阶段把 RAG 的入库、索引、检索和回答打通了；而 Phase 9 开始解决真正工程化的问题——当法规、标准或教材更新时，系统如何只更新有变化的 child chunk，复用 unchanged chunk 的向量能力，并在删除时同步关闭数据库和索引可见性，而不是粗暴全量重建。
+      </div>
+    </section>
+  </div>
+</body>
+</html>

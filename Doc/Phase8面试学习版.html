@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phase 8 学习文档｜从面试官提问角度理解当前项目</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --brand: #1d4ed8;
+      --brand-soft: #dbeafe;
+      --ok: #166534;
+      --warn: #92400e;
+      --danger: #991b1b;
+      --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    .container {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 48px;
+    }
+    .hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 45%, #9333ea 100%);
+      color: #fff;
+      border-radius: 24px;
+      padding: 40px 32px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+    .hero h1 { margin: 0 0 12px; font-size: 34px; line-height: 1.25; }
+    .hero p { margin: 8px 0; color: rgba(255,255,255,0.93); }
+    .badge-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .badge {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.18);
+      font-size: 14px;
+    }
+    .layout { display: grid; grid-template-columns: 290px 1fr; gap: 24px; align-items: start; }
+    .toc, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+    }
+    .toc { position: sticky; top: 20px; padding: 20px; }
+    .toc h2 { margin: 0 0 12px; font-size: 18px; }
+    .toc a {
+      display: block;
+      text-decoration: none;
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 10px;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+    .toc a:hover { background: #eff6ff; color: var(--brand); }
+    .content { display: grid; gap: 20px; }
+    .panel { padding: 24px; }
+    .panel h2 { margin-top: 0; font-size: 24px; }
+    .panel h3 { margin-top: 24px; margin-bottom: 10px; font-size: 18px; }
+    .lead { color: var(--muted); margin-top: -4px; }
+    .grid-2, .grid-3 { display: grid; gap: 16px; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      background: #fff;
+    }
+    .card h4 { margin: 0 0 8px; font-size: 17px; }
+    .callout {
+      border-left: 5px solid var(--brand);
+      background: var(--brand-soft);
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin: 16px 0;
+    }
+    .status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .done { background: #dcfce7; color: var(--ok); }
+    .todo { background: #fef3c7; color: var(--warn); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #f9fafb; color: #374151; font-size: 14px; }
+    tr:last-child td { border-bottom: none; }
+    pre {
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 16px;
+      border-radius: 14px;
+      overflow-x: auto;
+      font-size: 13px;
+      font-family: Consolas, Monaco, "Courier New", monospace;
+    }
+    .qa {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      margin-top: 14px;
+      background: #fcfcfd;
+    }
+    .qa .q { font-weight: 700; margin-bottom: 8px; }
+    .qa .a { color: #374151; }
+    .footer-note { color: var(--muted); font-size: 14px; }
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .toc { position: static; }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>CyberSec RAG Agent · Phase 8 学习文档</h1>
+      <p>从“面试官会怎么追问你”这个角度，理解当前项目在 <strong>Phase 8</strong> 到底已经具备了什么能力、为什么 parent-child 设计终于真正参与了问答，以及为什么 citation checker 在这个阶段不是可选增强，而是必要边界。</p>
+      <div class="badge-row">
+        <span class="badge">当前阶段：Phase 8</span>
+        <span class="badge">重点：parent context / answer_generator / citation_checker / query_log / query-answer API</span>
+        <span class="badge">仍未进入：replace diff / eval / 自动更新</span>
+      </div>
+    </section>
+
+    <div class="layout">
+      <aside class="toc">
+        <h2>目录</h2>
+        <a href="#intro">1. 一句话定义当前项目状态</a>
+        <a href="#upgrade">2. Phase 8 相比 Phase 7 升级了什么</a>
+        <a href="#implemented">3. 当前到底实现了哪些内容</a>
+        <a href="#flow">4. 问答链路怎么讲清楚</a>
+        <a href="#design">5. 关键设计点为什么这样做</a>
+        <a href="#qa">6. 面试官高频追问与答题思路</a>
+        <a href="#verify">7. 你需要会的运行与验证命令</a>
+        <a href="#notyet">8. 现在明确还没做什么</a>
+        <a href="#talking">9. 你该怎么口述这个项目</a>
+      </aside>
+
+      <main class="content">
+        <section id="intro" class="panel">
+          <h2>1. 一句话定义当前项目状态</h2>
+          <p class="lead">到了 Phase 8，项目第一次可以说自己“有问答能力”，但必须强调它是“证据约束问答”，不是自由发挥的聊天。</p>
+          <div class="callout">
+            <strong>推荐表述：</strong><br />
+            这是一个面向网络安全知识资料的 RAG 后端项目，当前已经完成到 <strong>Phase 8</strong>。系统不仅已经能做 safety、intent、query rewrite 和混合检索，还能基于召回证据补回 parent context，生成带 citations 的答案，并在返回前做引用一致性检查；如果证据不足，则明确返回保守结论而不是编造。
+          </div>
+        </section>
+
+        <section id="upgrade" class="panel">
+          <h2>2. Phase 8 相比 Phase 7 升级了什么</h2>
+          <p class="lead">面试官通常会问：你们 Phase 7 已经能 rewrite 和 retrieve 了，那 Phase 8 的本质变化到底是什么？</p>
+          <div class="grid-3">
+            <div class="card">
+              <h4>Phase 6 <span class="status done">已完成</span></h4>
+              <p>系统能做向量检索、关键词检索和 RRF 融合，返回 top_k child chunks。</p>
+            </div>
+            <div class="card">
+              <h4>Phase 7 <span class="status done">已完成</span></h4>
+              <p>系统能在检索前做 safety、intent、term expansion、rewrite 和 filter builder。</p>
+            </div>
+            <div class="card">
+              <h4>Phase 8 <span class="status done">当前</span></h4>
+              <p>系统能把检索证据组织成答案，给出 citations，并做引用一致性检查与 query_log 留痕。</p>
+            </div>
+          </div>
+          <div class="callout">
+            <strong>本质升级：</strong> Phase 7 让输入更安全、更可检索；Phase 8 则让系统第一次能把证据真正转化为“可返回给用户的答案”。
+          </div>
+        </section>
+
+        <section id="implemented" class="panel">
+          <h2>3. 当前到底实现了哪些内容</h2>
+          <div class="grid-2">
+            <div class="card">
+              <h4>parent context 回取</h4>
+              <p>系统会先用 child chunk 命中，再尝试基于 <code>parent_chunk_id</code> 回取 parent 文本，给生成层更多上下文。</p>
+            </div>
+            <div class="card">
+              <h4>answer_generator</h4>
+              <p><code>backend/app/services/answer_generator.py</code> 负责把 evidence contexts 组织成 answer 与 citations。</p>
+            </div>
+            <div class="card">
+              <h4>citation_checker</h4>
+              <p><code>citation_checker.py</code> 校验 citations 是否真实存在，以及页码、章节、条款号是否来自 metadata。</p>
+            </div>
+            <div class="card">
+              <h4>/query/answer</h4>
+              <p><code>POST /api/v1/query/answer</code> 串起 safety、rewrite、retrieve、parent context、answer、citation check、query_log。</p>
+            </div>
+            <div class="card">
+              <h4>query_log</h4>
+              <p>当前会记录 user_query、rewritten_query、intent、filters、retrieved_chunk_ids、answer、status、latency、model_name。</p>
+            </div>
+            <div class="card">
+              <h4>证据不足保守回答</h4>
+              <p>当没有足够证据或 citations 无法校验通过时，系统会返回“当前知识库未检索到明确依据”。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="flow" class="panel">
+          <h2>4. 问答链路怎么讲清楚</h2>
+          <p class="lead">这是 Phase 8 面试里的主线，要能一口气讲顺。</p>
+          <pre><code>user query
+  -> safety_guard
+  -> intent_classifier
+  -> term_expander
+  -> query_rewriter
+  -> metadata_filter_builder
+  -> hybrid retrieval (vector + keyword + RRF)
+  -> parent context fetch
+  -> answer_generator
+  -> citation_checker
+  -> query_log persistence
+  -> answer + citations</code></pre>
+
+          <h3>4.1 当前 `/query/answer` 返回什么</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>字段</th>
+                <th>含义</th>
+                <th>为什么重要</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>answer</code></td>
+                <td>基于当前证据生成的答案</td>
+                <td>这是用户真正消费的核心结果</td>
+              </tr>
+              <tr>
+                <td><code>citations</code></td>
+                <td>引用的 chunk 与位置信息</td>
+                <td>证明答案不是空口生成</td>
+              </tr>
+              <tr>
+                <td><code>retrieved_chunks</code></td>
+                <td>检索命中的 child chunks</td>
+                <td>方便调试“证据是否合理”</td>
+              </tr>
+              <tr>
+                <td><code>debug.evidence_contexts</code></td>
+                <td>生成层看到的上下文</td>
+                <td>能验证 parent context 是否真正补了回来</td>
+              </tr>
+              <tr>
+                <td><code>evidence_status</code></td>
+                <td>grounded / partial / insufficient / blocked</td>
+                <td>直接反映答案是否真的站得住</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>4.2 为什么 parent-child 设计在这里才真正体现价值</h3>
+          <p>前几个阶段里，parent-child 更像“先设计好结构”；到了 Phase 8，它第一次真正参与业务：child 负责检索命中，parent 负责给生成层补回更完整的局部上下文。</p>
+        </section>
+
+        <section id="design" class="panel">
+          <h2>5. 关键设计点为什么这样做</h2>
+          <div class="qa">
+            <div class="q">为什么 answer_generator 不能直接裸返回？</div>
+            <div class="a">因为只生成答案而不校验引用，会把系统重新推回“像聊天模型一样会说，但不一定站得住”的状态。Phase 8 的目标是有证据约束的回答，不是流畅但无法验证的回答。</div>
+          </div>
+          <div class="qa">
+            <div class="q">为什么 citation_checker 不是可选优化？</div>
+            <div class="a">因为它是对 answer_generator 的兜底边界。至少要确保引用 chunk 存在、标题一致、页码一致、章节/条款号来自真实 metadata。否则系统很容易在最后一步出现“看起来像有依据，实际上引用错了”的问题。</div>
+          </div>
+          <div class="qa">
+            <div class="q">为什么证据不足时要明确说不足，而不是尽量回答？</div>
+            <div class="a">因为 RAG 项目的可信度来自“知道什么、也知道自己不知道什么”。在网络安全与法规场景里，证据不足时硬答往往比不答更危险。</div>
+          </div>
+          <div class="qa">
+            <div class="q">为什么 query_log 要在这个阶段接进来？</div>
+            <div class="a">因为到 Phase 8，一次 query 已经具备完整业务链路信息，可以真实记录检索证据、答案、状态和耗时，这些数据会直接支撑后续评测与优化。</div>
+          </div>
+          <div class="qa">
+            <div class="q">为什么仍然没有做 reranker 主链路接入？</div>
+            <div class="a">因为当前 Phase 8 的任务是把“基于证据回答”打通，而不是继续扩展更后续的优化阶段。严格按 phase 边界推进，能避免架构过早膨胀。</div>
+          </div>
+        </section>
+
+        <section id="qa" class="panel">
+          <h2>6. 面试官高频追问与答题思路</h2>
+          <div class="qa">
+            <div class="q">Q1：Phase 8 完成后，项目第一次多了什么真正“能给用户看”的能力？</div>
+            <div class="a">第一次具备了面向用户的证据约束问答能力：不是只返回 chunks，而是返回 answer + citations，并能说明这些结论来自哪里。</div>
+          </div>
+          <div class="qa">
+            <div class="q">Q2：为什么你们一定要回取 parent context？</div>
+            <div class="a">因为 child chunk 为了检索通常较短，单独生成答案时可能上下文不完整；parent text 能补回结构上下文，让回答更稳，也更接近原文语义边界。</div>
+          </div>
+          <div class="qa">
+            <div class="q">Q3：citation_checker 检查的最小集合是什么？</div>
+            <div class="a">至少检查：引用 chunk 是否存在、doc_title 是否一致、page_start/page_end 是否一致、chapter/section/article_no 是否来自证据 metadata。</div>
+          </div>
+          <div class="qa">
+            <div class="q">Q4：当前已经算完整 RAG 吗？</div>
+            <div class="a">已经具备“可用问答闭环”的核心骨架，但还不是全部规划终点，因为 replace/chunk diff、评测体系和更完整优化链路还在后续 Phase。</div>
+          </div>
+          <div class="qa">
+            <div class="q">Q5：如果用户提的是明显攻击问题，Phase 8 会怎么走？</div>
+            <div class="a">仍然先经过 safety_guard。如果不是 allow，会直接返回安全结果并记录 query_log，不再继续进入检索和答案生成阶段。</div>
+          </div>
+        </section>
+
+        <section id="verify" class="panel">
+          <h2>7. 你需要会的运行与验证命令</h2>
+          <p class="lead">面试官会问“你怎么证明这块真的打通了”，所以你要能说出测试点。</p>
+          <pre><code># 在项目专用虚拟环境 / conda 环境中运行
+pytest backend/tests/test_answer_generator.py
+pytest backend/tests/test_citation_checker.py
+pytest backend/tests/test_query_answer_api.py -m integration</code></pre>
+
+          <h3>建议的手动验证思路</h3>
+          <ol>
+            <li>给一个法规问题，确认返回 answer 与 citations</li>
+            <li>确认 citations 至少带 <code>doc_title</code>、<code>page_start</code>、<code>page_end</code></li>
+            <li>观察 debug 字段中是否存在 parent_text</li>
+            <li>给一个证据不足的问题，确认系统返回保守答案</li>
+            <li>查看 <code>query_logs</code> 是否记录了链路关键字段</li>
+          </ol>
+        </section>
+
+        <section id="notyet" class="panel">
+          <h2>8. 现在明确还没做什么</h2>
+          <div class="grid-2">
+            <div class="card">
+              <h4>replace / chunk diff <span class="status todo">未做</span></h4>
+              <p>还没有进入文档替换、增量切分、仅更新变更 child chunk 的链路。</p>
+            </div>
+            <div class="card">
+              <h4>评测体系 <span class="status todo">未做</span></h4>
+              <p>自动评测、评测数据集和评测跑批仍在后续阶段。</p>
+            </div>
+            <div class="card">
+              <h4>自动知识更新 <span class="status todo">未做</span></h4>
+              <p>当前没有实现自动同步法规或自动更新知识库。</p>
+            </div>
+            <div class="card">
+              <h4>复杂反馈闭环 <span class="status todo">未做</span></h4>
+              <p>用户反馈驱动的高级优化链路尚未进入当前阶段。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="talking" class="panel">
+          <h2>9. 你该怎么口述这个项目</h2>
+          <div class="callout">
+            <strong>适合面试里的完整说法：</strong><br />
+            我们这个项目是一个面向网络安全法规、标准、教材和知识资料的 RAG 后端系统。前几个阶段已经把上传、解析清洗、结构化切分、索引建立、混合检索和查询理解打通了。到 Phase 8，我们第一次把它升级成一个能真正回答用户问题的系统：先通过 safety、intent 和 query rewrite 整理输入，再做混合检索，命中 child chunk 后补回 parent context，接着生成带 citations 的答案，并在返回前用 citation checker 检查引用是否真实、页码是否一致。这样系统就不是“只会返回片段”，而是“能基于证据回答”。
+          </div>
+          <p class="footer-note">建议你始终强调：Phase 8 的关键词不是“更会说”，而是“更会基于证据说”。</p>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

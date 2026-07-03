@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phase 6 学习文档｜从面试官提问角度理解当前项目</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --brand: #1d4ed8;
+      --brand-soft: #dbeafe;
+      --ok: #166534;
+      --warn: #92400e;
+      --danger: #991b1b;
+      --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    .container {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 48px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 45%, #9333ea 100%);
+      color: #fff;
+      border-radius: 24px;
+      padding: 40px 32px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      margin: 0 0 12px;
+      font-size: 34px;
+      line-height: 1.25;
+    }
+
+    .hero p { margin: 8px 0; color: rgba(255,255,255,0.93); }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .badge {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.18);
+      font-size: 14px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 290px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .toc, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .toc {
+      position: sticky;
+      top: 20px;
+      padding: 20px;
+    }
+
+    .toc h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .toc a {
+      display: block;
+      text-decoration: none;
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 10px;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .toc a:hover {
+      background: #eff6ff;
+      color: var(--brand);
+    }
+
+    .content { display: grid; gap: 20px; }
+    .panel { padding: 24px; }
+    .panel h2 { margin-top: 0; font-size: 24px; }
+    .panel h3 { margin-top: 24px; margin-bottom: 10px; font-size: 18px; }
+    .lead { color: var(--muted); margin-top: -4px; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      background: #fff;
+    }
+
+    .card h4 { margin: 0 0 8px; font-size: 17px; }
+
+    .callout {
+      border-left: 5px solid var(--brand);
+      background: var(--brand-soft);
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin: 16px 0;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .done { background: #dcfce7; color: var(--ok); }
+    .todo { background: #fef3c7; color: var(--warn); }
+    .no { background: #fee2e2; color: var(--danger); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f9fafb;
+      color: #374151;
+      font-size: 14px;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    pre {
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 16px;
+      border-radius: 14px;
+      overflow-x: auto;
+      font-size: 13px;
+      font-family: Consolas, Monaco, "Courier New", monospace;
+    }
+
+    code {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+    }
+
+    .qa {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      margin-top: 14px;
+      background: #fcfcfd;
+    }
+
+    .qa .q { font-weight: 700; margin-bottom: 8px; }
+    .qa .a { color: #374151; }
+
+    .footer-note { color: var(--muted); font-size: 14px; }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .toc { position: static; }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>CyberSec RAG Agent · Phase 6 学习文档</h1>
+      <p>从“面试官会怎么追问你”这个角度，理解当前项目在 <strong>Phase 6</strong> 到底已经具备了什么能力、为什么要同时做向量检索和 FTS 检索，以及为什么现在仍然不能说系统已经完成了问答能力。</p>
+      <div class="badge-row">
+        <span class="badge">当前阶段：Phase 6</span>
+        <span class="badge">重点：vector search / FTS / metadata filter / RRF / retrieve API</span>
+        <span class="badge">仍未进入：answer generation / citation checker / safety_guard 主链路</span>
+      </div>
+    </section>
+
+    <div class="layout">
+      <aside class="toc">
+        <h2>目录</h2>
+        <a href="#intro">1. 一句话定义当前项目状态</a>
+        <a href="#upgrade">2. Phase 6 相比 Phase 5 升级了什么</a>
+        <a href="#implemented">3. 当前到底实现了哪些内容</a>
+        <a href="#flow">4. 检索链路怎么讲清楚</a>
+        <a href="#design">5. 关键设计点为什么这样做</a>
+        <a href="#qa">6. 面试官高频追问与答题思路</a>
+        <a href="#verify">7. 你需要会的运行与验证命令</a>
+        <a href="#notyet">8. 现在明确还没做什么</a>
+        <a href="#talking">9. 你该怎么口述这个项目</a>
+      </aside>
+
+      <main class="content">
+        <section id="intro" class="panel">
+          <h2>1. 一句话定义当前项目状态</h2>
+          <p class="lead">面试里一个非常关键的能力，是能把“当前阶段到底完成到哪里”讲得既准确又不过度。</p>
+          <div class="callout">
+            <strong>推荐表述：</strong><br />
+            这是一个面向网络安全知识资料的 RAG 后端项目，当前已经完成到 <strong>Phase 6</strong>。系统不仅能把 child chunk 建好向量索引和关键词索引，还已经能接收 query，同时做 Qdrant 向量召回和 PostgreSQL FTS 召回，再通过 RRF 融合返回 top_k 相关 child chunks。但当前仍未进入 query 理解、安全边界、答案生成和引用校验阶段。
+          </div>
+        </section>
+
+        <section id="upgrade" class="panel">
+          <h2>2. Phase 6 相比 Phase 5 升级了什么</h2>
+          <p class="lead">面试官更关注“系统能力发生了什么本质变化”，而不仅仅是“你多写了一个 API”。</p>
+          <div class="grid-3">
+            <div class="card">
+              <h4>Phase 4 <span class="status done">已完成</span></h4>
+              <p>解决结构化切分、parent-child 关系、chunk_hash 和 chunk 落库问题。</p>
+            </div>
+            <div class="card">
+              <h4>Phase 5 <span class="status done">已完成</span></h4>
+              <p>解决本地 embedding / reranker 封装、Qdrant / FTS 索引建立问题。</p>
+            </div>
+            <div class="card">
+              <h4>Phase 6 <span class="status done">当前重点</span></h4>
+              <p>解决“输入问题后，系统如何把相关 child chunk 实际搜出来并统一返回”问题。</p>
+            </div>
+          </div>
+
+          <h3>本质升级</h3>
+          <ul>
+            <li>系统从“索引已经建好”升级为“第一次真正可检索”。</li>
+            <li>项目第一次具备“输入 query → 返回相关 chunks”的完整基础闭环。</li>
+            <li>Phase 7 / 8 的 query 理解与答案生成终于有了真实可用的召回底座。</li>
+          </ul>
+        </section>
+
+        <section id="implemented" class="panel">
+          <h2>3. 当前到底实现了哪些内容</h2>
+          <p class="lead">你要能把“做了什么”和“故意没做什么”分得非常清楚。</p>
+
+          <h3>已完成模块</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>模块</th>
+                <th>当前状态</th>
+                <th>你在面试里要怎么描述</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>query 向量化</td>
+                <td><span class="status done">已完成</span></td>
+                <td>现在 query 会复用 Phase 5 的同一 embedding_service 做向量化，保证 query 与文档向量空间一致。</td>
+              </tr>
+              <tr>
+                <td>Qdrant vector search</td>
+                <td><span class="status done">已完成</span></td>
+                <td>系统已经能对 child chunk 执行语义召回，并支持基础 metadata filter 下推。</td>
+              </tr>
+              <tr>
+                <td>PostgreSQL FTS search</td>
+                <td><span class="status done">已完成</span></td>
+                <td>系统已经能通过 <code>search_tsv</code> 做关键词召回，并对编号 / 英文术语保留 fallback 入口。</td>
+              </tr>
+              <tr>
+                <td>metadata filter</td>
+                <td><span class="status done">已完成</span></td>
+                <td>当前已支持显式结构化过滤，不做自然语言智能推断。</td>
+              </tr>
+              <tr>
+                <td>RRF 融合</td>
+                <td><span class="status done">已完成</span></td>
+                <td>向量召回与关键词召回已经能按 chunk_id 做统一排序融合。</td>
+              </tr>
+              <tr>
+                <td><code>/api/v1/query/retrieve</code></td>
+                <td><span class="status done">已完成</span></td>
+                <td>已经有一个检索调试接口可直接观察 vector / keyword / fused / final chunk 结果。</td>
+              </tr>
+              <tr>
+                <td>answer generation</td>
+                <td><span class="status no">未做</span></td>
+                <td>仍严格留在后续 Phase。</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>涉及到的关键文件</h3>
+          <div class="grid-2">
+            <div class="card">
+              <h4><code>backend/app/services/vector_store.py</code></h4>
+              <p>补齐了 Phase 6 的向量检索接口，而不只是 Phase 5 的 upsert 能力。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/app/services/keyword_store.py</code></h4>
+              <p>从纯 FTS 写入扩展为 FTS 检索与 fallback 检索封装。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/app/services/metadata_filter.py</code></h4>
+              <p>统一管理 doc_type / version_status / is_active / current_version_only 等检索过滤规则。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/app/services/fusion.py</code></h4>
+              <p>负责 Phase 6 的 RRF 融合逻辑与调试明细保留。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/app/services/retriever.py</code></h4>
+              <p>Phase 6 核心编排层：query embedding → 两路检索 → RRF → top_k 输出。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/app/api/query.py</code></h4>
+              <p>暴露 <code>/api/v1/query/retrieve</code>，但 route 保持轻量，主逻辑仍放在服务层。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="flow" class="panel">
+          <h2>4. 检索链路怎么讲清楚</h2>
+          <p class="lead">真正体现理解深度的，不是“我做了一个 retrieve API”，而是你能把检索闭环讲清楚。</p>
+
+          <h3>推荐你背下来的处理顺序</h3>
+          <pre><code>客户端发送 query
+  -> /api/v1/query/retrieve 接收 query / top_k / filters / debug
+  -> MetadataFilter 规范化显式过滤条件
+  -> embedding_service 对 query 向量化
+  -> vector_store.search 在 Qdrant 中召回 child chunk
+  -> keyword_store.search 在 PostgreSQL FTS 中召回 child chunk
+  -> fusion.reciprocal_rank_fusion 做 RRF 融合
+  -> 截取最终 top_k 结果
+  -> 若 debug=true，额外返回 vector_results / keyword_results / fused_results</code></pre>
+
+          <h3>为什么 Phase 6 很关键</h3>
+          <div class="callout">
+            因为从这一阶段开始，系统第一次拥有了真正可用的检索能力。没有 Phase 6，Phase 5 的索引虽然建好了，但系统仍然只是“有索引，没有召回链路”。
+          </div>
+
+          <h3>为什么当前结果仍然只返回 child chunk</h3>
+          <p>因为当前阶段的目标是“检索主单元召回”。child 更适合精细召回，parent 更适合后续命中后的上下文回填。所以 Phase 6 仍然不把 parent 放进主结果集。</p>
+        </section>
+
+        <section id="design" class="panel">
+          <h2>5. 关键设计点为什么这样做</h2>
+          <p class="lead">面试里最常见的追问，几乎都在“为什么”上。</p>
+
+          <h3>1）为什么向量检索和关键词检索必须并行存在？</h3>
+          <p>因为混合检索的核心就是两路互补。向量检索擅长语义相关，FTS 擅长法规编号、标准编号、英文术语、CVE 等精确文本信号。缺一路，召回能力都会明显失衡。</p>
+
+          <h3>2）为什么 metadata filter 现在只做显式过滤，不做智能推断？</h3>
+          <p>因为 Phase 6 的职责是“过滤规则正确执行”，而不是“从用户自然语言自动推断过滤意图”。后者属于 Phase 7 的 query 理解能力，如果现在提前做会直接越界。</p>
+
+          <h3>3）为什么要用 RRF，而不是现在就上 reranker？</h3>
+          <p>因为 RRF 是最基础、最稳定的多路结果融合方式，适合当前先把召回闭环打通。reranker 虽然在 Phase 5 已经封装，但正式进入查询链路会把当前阶段复杂度拉高，也越过了既定边界。</p>
+
+          <h3>4）为什么 `/query/retrieve` 被定义成调试接口？</h3>
+          <p>因为当前阶段的目标是验证“系统能不能把相关 chunk 召回出来”，而不是向用户返回最终答案。调试接口更强调检索明细、分路结果和融合结果，便于开发阶段观察质量。</p>
+
+          <h3>5）为什么默认过滤规则必须现在就正确？</h3>
+          <p>因为默认检索范围一旦错了，后续版本切换、软删除、历史版本查询都会出现语义错误。当前就必须保证 active document、active version、active chunk、current version only 的默认规则成立。</p>
+
+          <h3>6）为什么现在完成了检索，还不能说“RAG 问答已经完成”？</h3>
+          <p>因为当前只完成了召回层，还没有做 safety_guard、intent_classifier、query rewrite、rerank 主链路、answer generation 和 citation checker。所以当前完成只能理解为“Phase 6 阶段目标完成”。</p>
+        </section>
+
+        <section id="qa" class="panel">
+          <h2>6. 面试官高频追问与答题思路</h2>
+          <p class="lead">下面这些问题，就是你讲到当前阶段时大概率会被追问的点。</p>
+
+          <div class="qa">
+            <div class="q">Q1：你们现在已经能做检索了吗？</div>
+            <div class="a">A：能做基础检索了。当前已经可以把 query 同时送到向量检索和关键词检索，再通过 RRF 融合返回 top_k child chunks，但还没有进入完整问答阶段。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q2：为什么不能只做向量检索？</div>
+            <div class="a">A：因为网络安全领域有很多强关键词场景，比如法规条号、标准编号、英文术语、漏洞编号。只做向量检索，精确命中这些信号会明显不稳定，所以必须保留 FTS 一路。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q3：为什么当前 metadata filter 不是从自然语言自动识别的？</div>
+            <div class="a">A：因为 Phase 6 只实现“显式 filter 执行”，不做 query 理解。把过滤意图从自然语言里自动提取出来，是 Phase 7 的范围。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q4：为什么 RRF 先上，reranker 反而还没接进来？</div>
+            <div class="a">A：因为 RRF 足够轻量，能先把两路检索结果统一起来；reranker 接入会让当前阶段复杂度明显增加，更适合在后续更完整的查询编排阶段加入。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q5：为什么检索结果里不直接返回 parent chunk？</div>
+            <div class="a">A：因为当前检索主单元仍然是 child chunk。parent chunk 不是拿来直接召回排序的，而是给后续命中后的上下文回填做准备。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q6：你们现在的 retrieve API 是给终端用户直接用的吗？</div>
+            <div class="a">A：当前更偏调试接口。它主要用于观察 vector、keyword、fused 和 final results，帮助验证召回链路是否正常，不是最终问答接口。</div>
+          </div>
+        </section>
+
+        <section id="verify" class="panel">
+          <h2>7. 你需要会的运行与验证命令</h2>
+          <p class="lead">你不一定已经实际跑过所有命令，但你至少要知道 Phase 6 的理论验收路径。</p>
+
+          <h3>依赖安装</h3>
+          <pre><code>pip install -e ".[test]"</code></pre>
+
+          <h3>执行迁移</h3>
+          <pre><code>cd backend
+alembic upgrade head</code></pre>
+
+          <h3>运行 Phase 6 测试</h3>
+          <pre><code>pytest backend/tests/test_fusion.py
+pytest backend/tests/test_retriever.py
+pytest backend/tests/test_query_retrieve_api.py -m integration</code></pre>
+
+          <h3>运行默认测试</h3>
+          <pre><code>pytest</code></pre>
+
+          <h3>手动验证思路</h3>
+          <pre><code>先确保 Phase 5 已完成索引
+  -> 调用 /api/v1/query/retrieve
+  -> 观察 vector_results
+  -> 观察 keyword_results
+  -> 观察 fused_results
+  -> 确认最终 chunks 只包含 child chunk
+  -> 验证 doc_type / version_status / is_active / current_version_only 过滤生效</code></pre>
+
+          <p class="footer-note">注意：当前 retrieve 成功只代表 Phase 6 的基础检索链路成功，不代表 query 理解、答案生成或引用校验已经完成。</p>
+        </section>
+
+        <section id="notyet" class="panel">
+          <h2>8. 现在明确还没做什么</h2>
+          <p class="lead">面试时越能把边界讲清楚，越能体现你是真的理解项目而不是在“虚报完成度”。</p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>能力</th>
+                <th>当前状态</th>
+                <th>为什么还没做</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>safety_guard 主链路</td>
+                <td><span class="status no">未实现</span></td>
+                <td>这是 Phase 7 的核心内容。</td>
+              </tr>
+              <tr>
+                <td>intent classifier / query rewrite</td>
+                <td><span class="status no">未实现</span></td>
+                <td>属于后续 query 理解阶段。</td>
+              </tr>
+              <tr>
+                <td>reranker 主链路接入</td>
+                <td><span class="status no">未实现</span></td>
+                <td>当前只完成基础召回与 RRF，不做更重的查询编排。</td>
+              </tr>
+              <tr>
+                <td>answer generation</td>
+                <td><span class="status no">未实现</span></td>
+                <td>必须建立在完整 query pipeline 之上。</td>
+              </tr>
+              <tr>
+                <td>citation checker</td>
+                <td><span class="status no">未实现</span></td>
+                <td>属于答案生成后的引用校验环节。</td>
+              </tr>
+              <tr>
+                <td>replace / chunk diff 增量更新</td>
+                <td><span class="status no">未实现</span></td>
+                <td>虽然已有 hash 和索引基础，但 replace/diff 仍在后续 Phase。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="talking" class="panel">
+          <h2>9. 你该怎么口述这个项目</h2>
+          <p class="lead">最后给你一个适合面试场景的口述模板。</p>
+          <div class="callout">
+            我做的是一个网络安全领域 RAG 知识库后端项目。这个项目是按 Phase 逐步推进的：先完成工程骨架和基础设施联通，再完成数据库地基、上传入口、解析清洗、结构化切分和索引建立。当前推进到 Phase 6，核心是让系统第一次具备真正的基础检索能力。现在系统已经能对 query 做 embedding，同时执行 Qdrant 向量检索和 PostgreSQL FTS 检索，再通过 RRF 融合返回 top_k child chunks，并支持基础 metadata filter。这样虽然还没有进入 query 理解和答案生成阶段，但已经把后续问答系统最关键的召回底座准备好了。
+          </div>
+          <p class="footer-note">如果你把上面这段讲顺，再能回答“为什么要保留 FTS”“为什么 Phase 6 只做显式 filter”“为什么先上 RRF 而不是 reranker”“为什么现在可检索还不等于可问答”，基本就能把当前阶段讲得很扎实了。</p>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

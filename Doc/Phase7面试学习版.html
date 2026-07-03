@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phase 7 学习文档｜从面试官提问角度理解当前项目</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --brand: #1d4ed8;
+      --brand-soft: #dbeafe;
+      --ok: #166534;
+      --warn: #92400e;
+      --danger: #991b1b;
+      --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    .container {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 48px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 45%, #9333ea 100%);
+      color: #fff;
+      border-radius: 24px;
+      padding: 40px 32px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      margin: 0 0 12px;
+      font-size: 34px;
+      line-height: 1.25;
+    }
+
+    .hero p { margin: 8px 0; color: rgba(255,255,255,0.93); }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .badge {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.18);
+      font-size: 14px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 290px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .toc, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .toc {
+      position: sticky;
+      top: 20px;
+      padding: 20px;
+    }
+
+    .toc h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .toc a {
+      display: block;
+      text-decoration: none;
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 10px;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .toc a:hover {
+      background: #eff6ff;
+      color: var(--brand);
+    }
+
+    .content { display: grid; gap: 20px; }
+    .panel { padding: 24px; }
+    .panel h2 { margin-top: 0; font-size: 24px; }
+    .panel h3 { margin-top: 24px; margin-bottom: 10px; font-size: 18px; }
+    .lead { color: var(--muted); margin-top: -4px; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      background: #fff;
+    }
+
+    .card h4 { margin: 0 0 8px; font-size: 17px; }
+
+    .callout {
+      border-left: 5px solid var(--brand);
+      background: var(--brand-soft);
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin: 16px 0;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .done { background: #dcfce7; color: var(--ok); }
+    .todo { background: #fef3c7; color: var(--warn); }
+    .no { background: #fee2e2; color: var(--danger); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f9fafb;
+      color: #374151;
+      font-size: 14px;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    pre {
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 16px;
+      border-radius: 14px;
+      overflow-x: auto;
+      font-size: 13px;
+      font-family: Consolas, Monaco, "Courier New", monospace;
+    }
+
+    code {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+    }
+
+    .qa {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      margin-top: 14px;
+      background: #fcfcfd;
+    }
+
+    .qa .q { font-weight: 700; margin-bottom: 8px; }
+    .qa .a { color: #374151; }
+
+    .footer-note { color: var(--muted); font-size: 14px; }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .toc { position: static; }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>CyberSec RAG Agent · Phase 7 学习文档</h1>
+      <p>从“面试官会怎么追问你”这个角度，理解当前项目在 <strong>Phase 7</strong> 到底已经具备了什么能力、为什么要先做安全边界与查询理解，以及为什么现在仍然不能说系统已经完成了问答链路。</p>
+      <div class="badge-row">
+        <span class="badge">当前阶段：Phase 7</span>
+        <span class="badge">重点：safety_guard / intent / expand / rewrite / filter builder / rewrite API</span>
+        <span class="badge">仍未进入：answer generation / citation checker / replace diff / eval</span>
+      </div>
+    </section>
+
+    <div class="layout">
+      <aside class="toc">
+        <h2>目录</h2>
+        <a href="#intro">1. 一句话定义当前项目状态</a>
+        <a href="#upgrade">2. Phase 7 相比 Phase 6 升级了什么</a>
+        <a href="#implemented">3. 当前到底实现了哪些内容</a>
+        <a href="#flow">4. 输入优化链路怎么讲清楚</a>
+        <a href="#design">5. 关键设计点为什么这样做</a>
+        <a href="#qa">6. 面试官高频追问与答题思路</a>
+        <a href="#verify">7. 你需要会的运行与验证命令</a>
+        <a href="#notyet">8. 现在明确还没做什么</a>
+        <a href="#talking">9. 你该怎么口述这个项目</a>
+      </aside>
+
+      <main class="content">
+        <section id="intro" class="panel">
+          <h2>1. 一句话定义当前项目状态</h2>
+          <p class="lead">面试里一个很常见的失分点，是把“能检索”误说成“能回答”。Phase 7 仍然要讲清楚边界。</p>
+          <div class="callout">
+            <strong>推荐表述：</strong><br />
+            这是一个面向网络安全知识资料的 RAG 后端项目，当前已经完成到 <strong>Phase 7</strong>。系统不仅已经具备 child chunk 的混合检索能力，还能在检索前先做安全判断、意图分类、术语扩展、query 改写和 metadata filter 补全；但当前仍未进入最终答案生成和引用校验阶段。
+          </div>
+        </section>
+
+        <section id="upgrade" class="panel">
+          <h2>2. Phase 7 相比 Phase 6 升级了什么</h2>
+          <p class="lead">面试官更关心“输入进入检索前，系统多了什么能力”，而不是“你多写了一个接口”。</p>
+          <div class="grid-3">
+            <div class="card">
+              <h4>Phase 5 <span class="status done">已完成</span></h4>
+              <p>解决 child chunk 建索引：embedding、Qdrant、FTS 与统一 payload。</p>
+            </div>
+            <div class="card">
+              <h4>Phase 6 <span class="status done">已完成</span></h4>
+              <p>解决 query 检索：vector search、keyword search、RRF 与 `/query/retrieve`。</p>
+            </div>
+            <div class="card">
+              <h4>Phase 7 <span class="status done">当前</span></h4>
+              <p>解决 query 理解：safety_guard、intent、term expansion、rewrite、filter builder 与 `/query/rewrite`。</p>
+            </div>
+          </div>
+          <div class="callout">
+            <strong>本质升级：</strong> Phase 6 让系统“能找”，Phase 7 让系统“在找之前，先把用户输入整理得更安全、更可检索、更可解释”。
+          </div>
+        </section>
+
+        <section id="implemented" class="panel">
+          <h2>3. 当前到底实现了哪些内容</h2>
+          <div class="grid-2">
+            <div class="card">
+              <h4>安全边界</h4>
+              <p><code>backend/app/services/safety_guard.py</code> 使用规则优先方式输出 <code>allow / refuse / redirect</code>，用于在查询链路最前面拦截高风险请求。</p>
+            </div>
+            <div class="card">
+              <h4>意图分类</h4>
+              <p><code>intent_classifier.py</code> 将 query 归入 <code>standard_query</code>、<code>law_query</code>、<code>textbook_query</code>、<code>vulnerability_fix</code> 等类别。</p>
+            </div>
+            <div class="card">
+              <h4>术语扩展</h4>
+              <p><code>term_expander.py</code> 负责将“等保”“WAF”“EDR”“SQLi”等缩写或术语扩展成更利于检索的候选词。</p>
+            </div>
+            <div class="card">
+              <h4>查询改写</h4>
+              <p><code>query_rewriter.py</code> 生成 <code>rewritten_query</code>、<code>search_keywords</code>、<code>sub_queries</code>，但不直接生成答案。</p>
+            </div>
+            <div class="card">
+              <h4>过滤补全</h4>
+              <p><code>MetadataFilterBuilder</code> 坚持“显式 filter 优先，intent 推断只补充不覆盖”，避免系统把用户的明确约束改坏。</p>
+            </div>
+            <div class="card">
+              <h4>调试 API</h4>
+              <p><code>POST /api/v1/query/rewrite</code> 输出 safety、intent、expanded_terms、rewritten 与 filters，方便独立调试输入优化链路。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="flow" class="panel">
+          <h2>4. 输入优化链路怎么讲清楚</h2>
+          <p class="lead">这一节是面试里的主线：从用户问题进入系统，到真正检索前都发生了什么。</p>
+          <pre><code>user query
+  -> safety_guard
+  -> intent_classifier
+  -> term_expander
+  -> query_rewriter
+  -> metadata_filter_builder
+  -> (下一阶段才会继续进入完整 answer 主链路)</code></pre>
+
+          <h3>4.1 `/query/rewrite` 当前返回什么</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>字段</th>
+                <th>含义</th>
+                <th>为什么重要</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>safety</code></td>
+                <td>允许、拒绝或防御性重定向</td>
+                <td>证明系统在网络安全领域不是“无门槛回答器”</td>
+              </tr>
+              <tr>
+                <td><code>intent</code></td>
+                <td>问题属于法规、标准、教材、修复等哪类</td>
+                <td>决定后续的检索表达与文档类型倾向</td>
+              </tr>
+              <tr>
+                <td><code>expanded_terms</code></td>
+                <td>术语补全列表</td>
+                <td>兼顾缩写、全称、同义词与中英文表达</td>
+              </tr>
+              <tr>
+                <td><code>rewritten</code></td>
+                <td>改写 query、关键词、子查询</td>
+                <td>让向量检索和关键词检索都更容易命中</td>
+              </tr>
+              <tr>
+                <td><code>filters</code></td>
+                <td>最终结构化过滤条件</td>
+                <td>方便验证显式条件是否被保留、推断条件是否合理补充</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>4.2 当前为什么还不把 rewrite 直接接到最终回答里</h3>
+          <p>因为当前更重要的是把输入优化链路做成一个<strong>可单独观察、可单独测试、可单独解释</strong>的阶段。只有当 rewrite 质量足够稳定，后续接入 answer generation 才不会把问题掩盖掉。</p>
+        </section>
+
+        <section id="design" class="panel">
+          <h2>5. 关键设计点为什么这样做</h2>
+          <div class="qa">
+            <div class="q">为什么 safety_guard 必须放在最前面？</div>
+            <div class="a">因为这是网络安全场景。若先检索、再判断，系统可能已经帮用户组织好了危险上下文。先判定 allow / refuse / redirect，才能真正形成防护边界。</div>
+          </div>
+          <div class="qa">
+            <div class="q">为什么当前优先用规则而不是完全依赖 LLM？</div>
+            <div class="a">因为规则更稳定、可解释、可测试，特别适合 Phase 7 这种要先建立边界和调试能力的阶段。LLMService 现在只是未来增强的预留包装层。</div>
+          </div>
+          <div class="qa">
+            <div class="q">为什么 intent_classifier 还要输出 suggested_doc_types？</div>
+            <div class="a">因为 query 的“问题类型”会影响默认检索倾向。比如标准类问题更适合优先看 <code>standard</code> / <code>policy</code>，但这只是补充建议，不能覆盖用户显式给定的过滤条件。</div>
+          </div>
+          <div class="qa">
+            <div class="q">为什么 metadata_filter_builder 要强调“显式优先”？</div>
+            <div class="a">因为用户自己传进来的过滤条件是明确意图，而 intent 推断只是系统猜测。若让猜测覆盖显式条件，系统就可能在检索范围上犯错。</div>
+          </div>
+          <div class="qa">
+            <div class="q">为什么 query_rewriter 输出 search_keywords 和 sub_queries，而不只给一个 rewritten_query？</div>
+            <div class="a">因为混合检索里，不同表示形式对不同召回通道有价值：一个统一 rewrite 适合整体表达，关键词适合 FTS，子查询适合后续多路并行召回与调试。</div>
+          </div>
+        </section>
+
+        <section id="qa" class="panel">
+          <h2>6. 面试官高频追问与答题思路</h2>
+
+          <div class="qa">
+            <div class="q">Q1：Phase 7 完成后，系统和 Phase 6 最大区别是什么？</div>
+            <div class="a">Phase 6 解决的是“怎么检索”，Phase 7 解决的是“检索前怎么先把用户输入处理得更安全、更有结构、更适合召回”。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q2：为什么你们要单独做一个 `/query/rewrite` 调试接口？</div>
+            <div class="a">因为输入理解链路的问题不能和最终回答混在一起看。单独暴露 rewrite 调试接口，可以直接检查 safety、intent、扩展词、改写结果和 filters 是否符合预期。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q3：如果用户问的是明显攻击问题怎么办？</div>
+            <div class="a">当前由 safety_guard 在链路最前面识别，输出 <code>refuse</code> 或 <code>redirect</code>，并给出安全替代表达，例如转向检测、修复、日志排查或事件响应建议。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q4：你们现在已经在 Phase 7 用上 LLM 了吗？</div>
+            <div class="a">主链路还没有。当前主要是规则优先实现，以保证行为稳定和边界清晰。<code>llm_service.py</code> 已经预留好后续接入外部 LLM 的包装方式，但并未越界把它塞进 Phase 7 主流程。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q5：为什么 Phase 7 还不能算完整问答？</div>
+            <div class="a">因为问答至少还缺 answer generation、reranker 主链路接入、citation checker，以及最终答案与证据组织逻辑。Phase 7 只是在为这些后续能力整理一个更安全、更可控的输入入口。</div>
+          </div>
+        </section>
+
+        <section id="verify" class="panel">
+          <h2>7. 你需要会的运行与验证命令</h2>
+          <p class="lead">面试官有时会追问你“那你怎么验证这块是对的”，下面这些命令和验证点要能说出来。</p>
+          <pre><code># 在项目专用虚拟环境 / conda 环境中运行
+pytest backend/tests/test_safety_guard.py
+pytest backend/tests/test_intent_classifier.py
+pytest backend/tests/test_query_rewriter.py
+pytest backend/tests/test_query_rewrite_api.py -m integration</code></pre>
+
+          <h3>建议的手动验证思路</h3>
+          <ol>
+            <li>给一个标准类问题，观察 intent 是否识别为 <code>standard_query</code></li>
+            <li>给一个安全缩写问题，观察 expanded_terms 是否补出全称</li>
+            <li>给一个显式 <code>doc_type</code> 的请求，观察 filter builder 是否保留显式条件</li>
+            <li>给一个攻击性请求，观察 safety 是否输出 <code>refuse</code> 或 <code>redirect</code></li>
+          </ol>
+        </section>
+
+        <section id="notyet" class="panel">
+          <h2>8. 现在明确还没做什么</h2>
+          <div class="grid-2">
+            <div class="card">
+              <h4>完整 answer generation <span class="status todo">未做</span></h4>
+              <p>当前还没有把 rewrite 后的结果继续送入完整答案生成链路。</p>
+            </div>
+            <div class="card">
+              <h4>citation checker <span class="status todo">未做</span></h4>
+              <p>还没有对答案与证据片段做最终引用校验。</p>
+            </div>
+            <div class="card">
+              <h4>replace / chunk diff <span class="status todo">未做</span></h4>
+              <p>增量更新、版本替换和只重建变更 chunk 的逻辑属于后续 Phase。</p>
+            </div>
+            <div class="card">
+              <h4>评测体系 <span class="status todo">未做</span></h4>
+              <p>自动评测、评测数据集与评测跑批还没进入当前阶段。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="talking" class="panel">
+          <h2>9. 你该怎么口述这个项目</h2>
+          <div class="callout">
+            <strong>适合面试里的完整说法：</strong><br />
+            我们这个项目是一个面向网络安全法规、标准、教材和知识资料的 RAG 后端系统。前面几个 Phase 已经完成上传、解析清洗、结构化切分、child chunk 建索引以及基础混合检索。到 Phase 7，我们进一步把查询入口前置成一个安全且可解释的输入优化链路：先做 safety_guard，判断请求是否应该允许、拒绝或重定向；再做意图分类、术语扩展、query 改写和 metadata filter 补全。这样后续进入答案生成时，输入就已经更安全、结构更清晰、召回目标也更明确了。
+          </div>
+          <p class="footer-note">建议你在讲述时始终强调：Phase 7 已经具备“安全边界 + 查询理解”，但还不是最终问答闭环。</p>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

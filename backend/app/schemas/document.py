@@ -1,7 +1,22 @@
-"""document 相关 Pydantic schema。
+"""document 相关 Pydantic schema。"""
 
-Phase 0 占位文件：本模块属于规格 §5 规划的后续 Phase，当前不实现任何业务逻辑。
-后续 Phase 实现时再补全，避免提前超范围实现。
-"""
+from __future__ import annotations
 
-# TODO: 待对应 Phase 实现。
+from pydantic import BaseModel
+
+
+class DocumentReplaceResponse(BaseModel):
+    """Phase 9 replace 接口响应。"""
+
+    document_id: str
+    version_id: str
+    task_id: str
+    status: str
+
+
+class DocumentDeleteResponse(BaseModel):
+    """Phase 9 soft delete 接口响应。"""
+
+    document_id: str
+    status: str
+    deactivated_chunk_count: int

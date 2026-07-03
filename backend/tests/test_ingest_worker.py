@@ -1,4 +1,4 @@
-"""Phase 4 入库 worker 测试。"""
+"""Phase 5 入库 worker 测试。"""
 
 from __future__ import annotations
 
@@ -14,6 +14,38 @@ from app.models.ingest_task import IngestTask
 from app.workers.ingest_worker import ingest_document_task
 
 pytestmark = pytest.mark.integration
+
+
+class FakeIndexService:
+    """worker 测试中的索引服务替身。"""
+
+    def __init__(self) -> None:
+        self.received_chunks = []
+        self.received_version = None
+
+    def build_chunk_indexes(self, chunks, *, version):
+        self.received_chunks = list(chunks)
+        self.received_version = version
+        child_count = len([chunk for chunk in chunks if chunk.chunk_type == "child"])
+        return type(
+            "IndexResult",
+            (),
+            {
+                "indexed_chunk_count": child_count,
+                "vector_upsert_count": child_count,
+                "keyword_updated_count": child_count,
+            },
+        )()
+
+
+class FakeIndexServiceFactory:
+    """为 monkeypatch 提供 from_db 接口。"""
+
+    def __init__(self, fake_service: FakeIndexService) -> None:
+        self.fake_service = fake_service
+
+    def from_db(self, db):
+        return self.fake_service
 
 
 def create_ingest_task_records(
@@ -70,8 +102,13 @@ def create_ingest_task_records(
     return document, version, task
 
 
-def test_ingest_worker_persists_chunks_for_law_text(db_session) -> None:
+def test_ingest_worker_persists_chunks_and_builds_indexes_for_child_chunks(db_session, monkeypatch) -> None:
     sample_path = Path(__file__).parent / "fixtures" / "law_sample.txt"
+    fake_index_service = FakeIndexService()
+    monkeypatch.setattr(
+        "app.workers.ingest_worker.IndexService",
+        FakeIndexServiceFactory(fake_index_service),
+    )
     document, version, task = create_ingest_task_records(
         db_session,
         file_path=sample_path,
@@ -93,18 +130,32 @@ def test_ingest_worker_persists_chunks_for_law_text(db_session) -> None:
 
     assert result["status"] == "completed"
     assert result["chunk_count"] >= 2
+    assert result["indexed_chunk_count"] >= 1
     assert refreshed_task is not None
     assert refreshed_task.status == "completed"
-    assert "切分与 chunk 落库已完成" in (refreshed_task.message or "")
+    assert "child chunk 索引已完成" in (refreshed_task.message or "")
     assert persisted_chunks
     assert any(chunk.chunk_type == "parent" for chunk in persisted_chunks)
     assert any(chunk.chunk_type == "child" for chunk in persisted_chunks)
-    assert all(chunk.chunk_hash for chunk in persisted_chunks)
-    assert any(chunk.article_no for chunk in persisted_chunks if chunk.chunk_type == "child")
+    assert len(fake_index_service.received_chunks) == len(persisted_chunks)
+    assert fake_index_service.received_version is not None
 
 
-def test_ingest_worker_marks_failed_when_chunking_cannot_produce_output(db_session, monkeypatch) -> None:
+def test_ingest_worker_marks_failed_when_index_build_raises(db_session, monkeypatch) -> None:
     sample_path = Path(__file__).parent / "fixtures" / "plain_note.txt"
+
+    class FailingIndexService:
+        def build_chunk_indexes(self, chunks, *, version):
+            raise RuntimeError("索引建立失败")
+
+    class FailingIndexServiceFactory:
+        def from_db(self, db):
+            return FailingIndexService()
+
+    monkeypatch.setattr(
+        "app.workers.ingest_worker.IndexService",
+        FailingIndexServiceFactory(),
+    )
     document, version, task = create_ingest_task_records(
         db_session,
         file_path=sample_path,
@@ -112,8 +163,6 @@ def test_ingest_worker_marks_failed_when_chunking_cannot_produce_output(db_sessi
         doc_type="other",
         mime_type="text/plain",
     )
-
-    monkeypatch.setattr("app.workers.ingest_worker.generate_chunks", lambda **kwargs: [])
 
     result = ingest_document_task(
         document_id=str(document.id),
@@ -128,5 +177,5 @@ def test_ingest_worker_marks_failed_when_chunking_cannot_produce_output(db_sessi
     assert result["status"] == "failed"
     assert refreshed_task is not None
     assert refreshed_task.status == "failed"
-    assert refreshed_task.error_message
-    assert "失败" in (refreshed_task.message or "")
+    assert refreshed_task.error_message == "索引建立失败"
+    assert "索引建立失败" in (refreshed_task.error_message or "")

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>第 1 课：用一张地图读懂项目结构</title>
+  <link rel="stylesheet" href="../assets/lesson.css" />
+</head>
+<body>
+<main>
+<article>
+  <p class="small">Teach_Learn · Lesson 0001</p>
+  <h1>用一张地图读懂项目结构</h1>
+  <p>这一课的目标不是记住所有文件，而是学会一个定位方法：<strong>从用户动作反推代码入口，再沿着服务层往下走。</strong></p>
+
+  <div class="callout">
+    <strong>你的第一个 tangible win：</strong>看见一个功能需求时，你能判断它大概率属于 <code>api/</code>、<code>services/</code>、<code>workers/</code>、<code>models/</code> 还是 <code>frontend/</code>。
+  </div>
+
+  <h2>1. 先分清“项目外壳”和“业务核心”</h2>
+  <p>这个仓库不是单一 Python 脚本，而是一个完整应用。外层文件负责运行、配置和文档；核心代码分成后端与前端。</p>
+  <ul>
+    <li><code>README.md</code>：当前实现状态和运行说明。</li>
+    <li><code>CLAUDE.md</code>：给 AI 助手的项目规则，也是很好的架构导览。</li>
+    <li><code>Doc/文档2.MD</code>：权威规格；当代码和说明冲突时优先看它。</li>
+    <li><code>backend/</code>：RAG 安全系统的大部分业务逻辑。</li>
+    <li><code>frontend/</code>：用户界面，调用后端 API。</li>
+  </ul>
+
+  <h2>2. 后端按“层”读，不按文件名乱翻</h2>
+  <p>项目约定：API 路由保持薄，真正流程放在 service 或 worker。你读代码时可以按下面顺序：</p>
+  <pre>HTTP 请求
+  ↓
+backend/app/api/*.py          # 找接口入口
+  ↓
+backend/app/services/*.py     # 找业务流程
+  ↓
+backend/app/models/*.py       # 找数据库对象
+  ↓
+外部依赖：PostgreSQL / Redis / Qdrant / LLM</pre>
+
+  <h2>3. 用四条主流程建立骨架</h2>
+  <div class="grid">
+    <section class="card"><h3>上传 / ingest</h3><p>看 <code>upload_service</code>、<code>ingest_worker</code>、parser/cleaner/chunk/index 相关服务。</p></section>
+    <section class="card"><h3>查询 / answer</h3><p>看 <code>api/query.py</code>，再跟到 safety、intent、rewrite、retrieve、answer、citation。</p></section>
+    <section class="card"><h3>替换 / update</h3><p>看 <code>api/documents.py</code> 和 <code>services/update_service.py</code>。</p></section>
+    <section class="card"><h3>评测 / eval</h3><p>看 <code>api/eval.py</code>、<code>services/eval_service.py</code> 和 <code>eval/golden_dataset.jsonl</code>。</p></section>
+  </div>
+
+  <h2>4. 练习：从需求定位文件</h2>
+  <div class="quiz">
+    <p><strong>不看答案，先在心里回答：</strong></p>
+    <ol>
+      <li>“上传 PDF 后没有进入后台处理”，你会先看哪两个区域？</li>
+      <li>“回答引用不准确”，你会先看哪个服务和哪个 prompt？</li>
+      <li>“替换文档后旧内容还能被检索到”，你会先看哪个 service？</li>
+    </ol>
+    <details>
+      <summary>展开参考答案</summary>
+      <ol>
+        <li><code>app/api/upload.py</code> / <code>upload_service.py</code>，再看 <code>workers/ingest_worker.py</code> 与 Celery 配置。</li>
+        <li><code>services/citation_checker.py</code> 与 <code>prompts/citation_checker.md</code>，也可能回看 <code>answer_generator</code>。</li>
+        <li><code>services/update_service.py</code>，重点看 PostgreSQL、FTS、Qdrant 可见性是否同步。</li>
+      </ol>
+    </details>
+  </div>
+
+  <h2>5. 本课参考</h2>
+  <ul>
+    <li><a href="../reference/project-map.html">项目结构速查图</a></li>
+    <li><a href="../../CLAUDE.md">CLAUDE.md</a>：本项目最适合新手先读的架构说明。</li>
+    <li><a href="../../README.md">README.md</a>：当前功能和运行方式。</li>
+  </ul>
+
+  <div class="callout">
+    下一步建议：打开 <code>backend/app/main.py</code>，找它注册了哪些 router。然后问我：“带我沿着 query/answer 路由走一遍”。
+  </div>
+</article>
+</main>
+</body>
+</html>

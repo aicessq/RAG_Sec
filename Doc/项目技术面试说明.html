@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>项目技术面试说明｜CyberSec RAG Agent</title>
+  <style>
+    body { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; margin: 0; background: #f4f7fb; color: #1f2937; line-height: 1.7; }
+    .container { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 48px; }
+    .hero { background: linear-gradient(135deg,#0f172a 0%,#1d4ed8 40%,#0f766e 100%); color: #fff; border-radius: 24px; padding: 40px 32px; margin-bottom: 24px; }
+    .hero h1 { margin: 0 0 12px; font-size: 34px; }
+    .badge { display:inline-block; margin:6px 8px 0 0; padding:8px 12px; border-radius:999px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.18); font-size:14px; }
+    .panel { background:#fff; border:1px solid #e5e7eb; border-radius:20px; padding:24px; margin-bottom:20px; box-shadow:0 12px 30px rgba(15,23,42,.08); }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+    .card { border:1px solid #e5e7eb; border-radius:16px; padding:18px; }
+    .callout { border-left:5px solid #1d4ed8; background:#dbeafe; padding:14px 16px; border-radius:12px; margin:16px 0; }
+    .qa { border:1px solid #e5e7eb; border-radius:16px; padding:18px; margin-top:14px; background:#fcfcfd; }
+    .q { font-weight:700; margin-bottom:8px; }
+    pre { background:#0f172a; color:#e5e7eb; padding:16px; border-radius:14px; overflow:auto; }
+    @media (max-width: 900px) { .grid { grid-template-columns:1fr; } .hero h1 { font-size:28px; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>CyberSec RAG Agent · 项目技术面试说明</h1>
+      <p>这是一份面向面试场景的项目说明文档，帮助你从“项目做了什么、为什么这么设计、技术怎么选、架构怎么讲”四个角度，把当前代码库讲清楚。</p>
+      <span class="badge">项目类型：网络安全领域 RAG 后端</span>
+      <span class="badge">当前进度：Phase 10</span>
+      <span class="badge">关键词：FastAPI / PostgreSQL / Qdrant / Redis / Celery / RAG / Eval</span>
+    </section>
+
+    <section class="panel">
+      <h2>1. 这个项目一句话怎么说</h2>
+      <div class="callout">
+        这是一个面向网络安全法规、标准、教材和知识资料的 <strong>RAG 后端系统</strong>。它不仅能做文档上传、解析、切分、索引、检索和带引用回答，还支持文档增量更新、软删除以及基于 golden dataset 的量化评测。
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>2. 为什么这个项目不是“普通聊天机器人”</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>有明确知识边界</h3>
+          <p>核心知识来自法规、标准、教材、手册等结构化资料，而不是开放互联网自由聊天。</p>
+        </div>
+        <div class="card">
+          <h3>有安全边界</h3>
+          <p>查询链路最前面有 <code>safety_guard</code>，会拒绝攻击、绕过、入侵类请求。</p>
+        </div>
+        <div class="card">
+          <h3>有证据要求</h3>
+          <p>回答不是裸生成，而是要经过 retrieval、parent context、citation check 才能返回。</p>
+        </div>
+        <div class="card">
+          <h3>有工程维护能力</h3>
+          <p>支持 replace、chunk diff、向量复用、soft delete 和 eval，不是“一次性 demo”。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>3. 这个项目的技术栈怎么讲最合理</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>FastAPI + Pydantic</h3>
+          <p>负责 API、请求响应契约、Swagger 文档，适合快速构建分层清晰的后端。</p>
+        </div>
+        <div class="card">
+          <h3>SQLAlchemy + Alembic + PostgreSQL</h3>
+          <p>负责文档、版本、chunk、任务、日志、评测结果等数据落库，并承担 PostgreSQL FTS。</p>
+        </div>
+        <div class="card">
+          <h3>Redis + Celery</h3>
+          <p>负责 ingest / replace / reindex 这类异步任务，把重处理从同步接口中拆出去。</p>
+        </div>
+        <div class="card">
+          <h3>Qdrant</h3>
+          <p>负责 child chunk 的向量检索，是 hybrid retrieval 的 semantic search 部分。</p>
+        </div>
+        <div class="card">
+          <h3>PyMuPDF</h3>
+          <p>负责 PDF 解析，为后续清洗、chunk、引用页码提供基础文本来源。</p>
+        </div>
+        <div class="card">
+          <h3>sentence-transformers / torch</h3>
+          <p>负责本地 embedding 与 reranker 推理，是检索质量的基础。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>4. 架构主链路怎么说</h2>
+      <pre><code>上传链路：
+upload
+  -> 原始文件存储
+  -> file_hash
+  -> document / version / ingest_task
+  -> Celery worker
+  -> parse
+  -> clean
+  -> parent-child chunk
+  -> embedding / index
+
+查询链路：
+query
+  -> safety_guard
+  -> intent / term expansion / rewrite
+  -> metadata filter
+  -> vector search + PostgreSQL FTS
+  -> RRF fusion + rerank
+  -> parent context
+  -> answer_generator
+  -> citation_checker
+
+维护链路：
+replace
+  -> file_hash compare
+  -> chunk_hash diff
+  -> unchanged vector reuse
+  -> visibility sync
+
+eval 链路：
+golden_dataset.jsonl
+  -> eval_service
+  -> Recall@K / MRR / citation accuracy / refusal accuracy
+  -> eval_runs / eval_run_items</code></pre>
+    </section>
+
+    <section class="panel">
+      <h2>5. 面试官最容易追问的设计点</h2>
+      <div class="qa">
+        <div class="q">为什么要用 PostgreSQL + Qdrant，而不是只用一个存储？</div>
+        <div class="a">因为这个项目做的是 hybrid retrieval。PostgreSQL 既承担主业务数据，也承担 FTS；Qdrant 专门做向量检索。两者职责分开更清晰，也更符合工程上的可维护性。</div>
+      </div>
+      <div class="qa">
+        <div class="q">为什么 chunk 要分 parent 和 child？</div>
+        <div class="a">child chunk 负责被检索命中，parent chunk 负责补上下文。这样既能保持检索粒度足够细，又不会丢掉回答时需要的上下文信息。</div>
+      </div>
+      <div class="qa">
+        <div class="q">为什么 safety_guard 要放在 query 最前面？</div>
+        <div class="a">因为这是网络安全领域系统，必须优先判断请求是否属于攻击、绕过、入侵类危险意图。安全边界不能放在回答之后，而要前置。</div>
+      </div>
+      <div class="qa">
+        <div class="q">为什么 update 不是直接全量重建索引？</div>
+        <div class="a">因为规格明确要求增量更新。项目通过 file_hash 和 chunk_hash diff 只处理真正变化的 child chunk，并复用 unchanged 向量能力，避免每次替换都全量重建。</div>
+      </div>
+      <div class="qa">
+        <div class="q">为什么还要做 Phase 10 的评测体系？</div>
+        <div class="a">因为一个 RAG 系统不能只说“感觉回答不错”。必须有可重复数据集和指标，才能判断检索、拒答、引用质量是否真的改善了。</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>6. 这个项目适合怎么讲成亮点</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>亮点 1：不是只做 API 壳</h3>
+          <p>项目实现了从 ingest 到 answer，再到 update 和 eval 的完整后端闭环。</p>
+        </div>
+        <div class="card">
+          <h3>亮点 2：有明确的工程边界</h3>
+          <p>API 层保持薄，主要逻辑都放在 services 层，利于维护和测试。</p>
+        </div>
+        <div class="card">
+          <h3>亮点 3：有安全属性</h3>
+          <p>不是通用问答，而是把安全边界、拒答和合规回答放到设计核心。</p>
+        </div>
+        <div class="card">
+          <h3>亮点 4：有可持续演进能力</h3>
+          <p>支持 replace、chunk diff、soft delete、eval run，说明项目考虑了长期维护而非一次性展示。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>7. 如果面试官问“你做了哪些技术决策”</h2>
+      <div class="callout">
+        一个比较完整的回答方式是：
+        <br /><br />
+        我把项目拆成了几层：FastAPI 负责 API，Pydantic 负责契约，SQLAlchemy + PostgreSQL 负责结构化数据和 FTS，Qdrant 负责向量检索，Redis + Celery 负责异步任务，service 层负责把解析、切分、检索、回答、更新和评测串起来。这样做的好处是系统边界清晰，既能支撑 RAG 主链路，又能支持后续的增量更新和效果评测。
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>8. 项目阶段演进怎么概括</h2>
+      <pre><code>Phase 0-1：工程骨架 + 数据库基础
+Phase 2-4：上传、解析、清洗、chunk
+Phase 5-6：索引、混合检索
+Phase 7-8：安全、rewrite、证据约束回答
+Phase 9：replace、增量更新、soft delete
+Phase 10：eval dataset、指标化评测</code></pre>
+      <div class="callout">
+        最适合面试里的表达是：这个项目不是一开始就试图做“大而全”，而是按 phase 逐层补齐，从可运行、可检索、可回答，一直推进到可维护、可评测。
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>9. 最后一句总结</h2>
+      <div class="callout">
+        如果只能用一句话总结这个项目，你可以说：
+        <br /><br />
+        <strong>这是一个面向网络安全知识资料的工程化 RAG 后端，不仅打通了上传、切分、检索和回答，还补齐了安全边界、增量更新、软删除和评测体系，因此它更像一个可持续演进的知识系统，而不是一次性问答 Demo。</strong>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

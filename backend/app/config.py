@@ -42,6 +42,11 @@ class Settings(BaseSettings):
     app_name: str = Field(default="cybersec-rag-agent", description="应用名称")
     # 调试模式：保留给 SQL 打印、服务调试与测试观测使用
     debug: bool = Field(default=False, description="是否开启调试模式")
+    # 允许访问当前 FastAPI 的前端来源，用于本地前后端分离联调
+    frontend_allow_origins: list[str] = Field(
+        default_factory=lambda: ["http://localhost:5173", "http://127.0.0.1:5173"],
+        description="允许跨域访问的前端来源列表",
+    )
 
     # ---- PostgreSQL 配置 ----
     # Docker Compose 内服务名为 postgres，本地开发用 localhost
@@ -87,6 +92,10 @@ class Settings(BaseSettings):
     embedding_batch_size: int = Field(default=16, description="embedding 批处理大小")
     reranker_batch_size: int = Field(default=16, description="reranker 批处理大小")
     fts_language_config: str = Field(default="simple", description="PostgreSQL FTS 语言配置")
+
+    # ---- Phase 7+：远程 LLM 配置 ----
+    llm_api_key: str | None = Field(default=None, description="远程 LLM API key")
+    llm_base_url: str | None = Field(default=None, description="远程 LLM base URL")
 
     @field_validator("allowed_upload_extensions", "allowed_upload_mime_types", mode="before")
     @classmethod
