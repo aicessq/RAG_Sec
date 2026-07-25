@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phase 2 学习文档｜从面试官提问角度理解当前项目</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --brand: #1d4ed8;
+      --brand-soft: #dbeafe;
+      --ok: #166534;
+      --warn: #92400e;
+      --danger: #991b1b;
+      --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    .container {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 48px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 55%, #2563eb 100%);
+      color: #fff;
+      border-radius: 24px;
+      padding: 40px 32px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      margin: 0 0 12px;
+      font-size: 34px;
+      line-height: 1.25;
+    }
+
+    .hero p { margin: 8px 0; color: rgba(255,255,255,0.93); }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .badge {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.18);
+      font-size: 14px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 290px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .toc, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .toc {
+      position: sticky;
+      top: 20px;
+      padding: 20px;
+    }
+
+    .toc h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .toc a {
+      display: block;
+      text-decoration: none;
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 10px;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .toc a:hover {
+      background: #eff6ff;
+      color: var(--brand);
+    }
+
+    .content { display: grid; gap: 20px; }
+    .panel { padding: 24px; }
+    .panel h2 { margin-top: 0; font-size: 24px; }
+    .panel h3 { margin-top: 24px; margin-bottom: 10px; font-size: 18px; }
+    .lead { color: var(--muted); margin-top: -4px; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      background: #fff;
+    }
+
+    .card h4 { margin: 0 0 8px; font-size: 17px; }
+
+    .callout {
+      border-left: 5px solid var(--brand);
+      background: var(--brand-soft);
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin: 16px 0;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .done { background: #dcfce7; color: var(--ok); }
+    .todo { background: #fef3c7; color: var(--warn); }
+    .no { background: #fee2e2; color: var(--danger); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f9fafb;
+      color: #374151;
+      font-size: 14px;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    pre {
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 16px;
+      border-radius: 14px;
+      overflow-x: auto;
+      font-size: 13px;
+      font-family: Consolas, Monaco, "Courier New", monospace;
+    }
+
+    code {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+    }
+
+    .qa {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      margin-top: 14px;
+      background: #fcfcfd;
+    }
+
+    .qa .q { font-weight: 700; margin-bottom: 8px; }
+    .qa .a { color: #374151; }
+
+    .footer-note { color: var(--muted); font-size: 14px; }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .toc { position: static; }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>CyberSec RAG Agent · Phase 2 学习文档</h1>
+      <p>从“面试官会怎么追问你”这个角度，理解当前项目在 <strong>Phase 2</strong> 到底已经具备了什么能力、为什么这样设计、以及还严格保留了哪些边界。</p>
+      <div class="badge-row">
+        <span class="badge">当前阶段：Phase 2</span>
+        <span class="badge">重点：上传入口 / 原始文件落盘 / 异步任务入口</span>
+        <span class="badge">仍未进入：解析 / chunk / embedding / 检索 / 生成</span>
+      </div>
+    </section>
+
+    <div class="layout">
+      <aside class="toc">
+        <h2>目录</h2>
+        <a href="#intro">1. 一句话定义当前项目状态</a>
+        <a href="#upgrade">2. Phase 2 相比 Phase 1 升级了什么</a>
+        <a href="#implemented">3. 当前到底实现了哪些内容</a>
+        <a href="#flow">4. 上传链路怎么讲清楚</a>
+        <a href="#design">5. 关键设计点为什么这样做</a>
+        <a href="#qa">6. 面试官高频追问与答题思路</a>
+        <a href="#verify">7. 你需要会的运行与验证命令</a>
+        <a href="#notyet">8. 现在明确还没做什么</a>
+        <a href="#talking">9. 你该怎么口述这个项目</a>
+      </aside>
+
+      <main class="content">
+        <section id="intro" class="panel">
+          <h2>1. 一句话定义当前项目状态</h2>
+          <p class="lead">面试里最重要的能力之一，不是把文件列表背下来，而是能用一句话把系统目前的成熟度讲准确。</p>
+          <div class="callout">
+            <strong>推荐表述：</strong><br />
+            这是一个面向网络安全知识资料的 RAG 后端项目，当前已经完成 Phase 2：系统不仅有基础工程和数据库持久化地基，还已经具备<strong>新文档上传入口</strong>。也就是说，现在可以接收一个新文件、做基础校验、把原始文件落到本地存储、计算 SHA-256、创建 <code>document</code> / <code>document_version</code> / <code>ingest_task</code> 三类核心记录，并把后续入库动作交给 Celery 异步入口；但真正的解析、切分、向量化、索引与问答还没有开始实现。
+          </div>
+        </section>
+
+        <section id="upgrade" class="panel">
+          <h2>2. Phase 2 相比 Phase 1 升级了什么</h2>
+          <p class="lead">面试官不会只问“你多写了什么文件”，更会问“系统能力发生了什么本质变化”。</p>
+          <div class="grid-3">
+            <div class="card">
+              <h4>Phase 0 <span class="status done">已完成</span></h4>
+              <p>解决“工程能否启动、基础设施能否联通”的问题。</p>
+            </div>
+            <div class="card">
+              <h4>Phase 1 <span class="status done">已完成</span></h4>
+              <p>解决“数据库地基是否存在、业务表能否正式落地”的问题。</p>
+            </div>
+            <div class="card">
+              <h4>Phase 2 <span class="status done">当前重点</span></h4>
+              <p>解决“一个新文档能否被系统正式接收，并形成可异步处理的入库起点”的问题。</p>
+            </div>
+          </div>
+
+          <h3>本质升级</h3>
+          <ul>
+            <li>系统从“只有数据库结构”升级为“已经有第一个真实业务入口”。</li>
+            <li>上传动作不再是抽象设计，而是已经能形成 <strong>文件 + 数据库记录 + 异步任务</strong> 的最小闭环。</li>
+            <li>虽然还没有真正 ingest 文本内容，但系统已经有了后续解析链路的<strong>入口契约</strong>。</li>
+          </ul>
+        </section>
+
+        <section id="implemented" class="panel">
+          <h2>3. 当前到底实现了哪些内容</h2>
+          <p class="lead">你要能把“实现了什么”和“没实现什么”区分得非常清楚。</p>
+
+          <h3>已完成模块</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>模块</th>
+                <th>当前状态</th>
+                <th>你在面试里要怎么描述</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>FastAPI 基础工程</td>
+                <td><span class="status done">已完成</span></td>
+                <td>应用入口、路由聚合、全局异常处理、健康检查都已具备。</td>
+              </tr>
+              <tr>
+                <td>PostgreSQL ORM + Alembic</td>
+                <td><span class="status done">已完成</span></td>
+                <td>核心业务表、迁移环境、初始 schema、基础索引已经完成。</td>
+              </tr>
+              <tr>
+                <td>上传接口</td>
+                <td><span class="status done">已完成</span></td>
+                <td>已支持新文档上传请求接收、参数校验、结构化错误返回。</td>
+              </tr>
+              <tr>
+                <td>原始文件落盘</td>
+                <td><span class="status done">已完成</span></td>
+                <td>文件会按 document/version 维度保存到本地存储路径。</td>
+              </tr>
+              <tr>
+                <td>SHA-256 file_hash</td>
+                <td><span class="status done">已完成</span></td>
+                <td>为 document version 建立稳定内容指纹，后续可用于比对和去重。</td>
+              </tr>
+              <tr>
+                <td>异步任务入口</td>
+                <td><span class="status done">已完成</span></td>
+                <td>上传成功后会创建 ingest_task 并 dispatch Celery worker。</td>
+              </tr>
+              <tr>
+                <td>真实解析 / 切分 / 索引</td>
+                <td><span class="status no">未做</span></td>
+                <td>这是后续 Phase 的内容，当前 worker 仅为安全占位入口。</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>涉及到的关键文件</h3>
+          <div class="grid-2">
+            <div class="card">
+              <h4><code>backend/app/api/upload.py</code></h4>
+              <p>上传接口入口，负责表单解析、错误映射和调用 service。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/app/services/upload_service.py</code></h4>
+              <p>Phase 2 核心编排层：校验、哈希、落盘、建记录、投递任务。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/app/services/storage_service.py</code></h4>
+              <p>本地存储抽象，负责安全文件名、目录结构和删除清理。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/app/utils/hash_utils.py</code></h4>
+              <p>计算上传原始文件的 SHA-256。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/app/workers/celery_app.py</code></h4>
+              <p>最小 Celery 应用对象，使用 Redis 作为 broker / backend。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/app/workers/ingest_worker.py</code></h4>
+              <p>当前仅更新任务状态并作为后续真实 ingest pipeline 的入口占位。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="flow" class="panel">
+          <h2>4. 上传链路怎么讲清楚</h2>
+          <p class="lead">真正能体现你理解深度的，不是“我做了上传接口”，而是你能把链路讲成一个完整闭环。</p>
+
+          <h3>推荐你背下来的处理顺序</h3>
+          <pre><code>客户端上传文件
+  -> FastAPI route 接收 multipart/form-data
+  -> upload_service 读取文件 bytes
+  -> 校验文件名 / 扩展名 / MIME / 大小
+  -> 计算 SHA-256 file_hash
+  -> 预生成 document_id / version_id / task_id
+  -> storage_service 保存原始文件
+  -> 单次事务创建：document + document_version + ingest_task
+  -> commit 成功后 dispatch Celery 任务
+  -> 返回 document_id / version_id / task_id / status=queued</code></pre>
+
+          <h3>为什么这是一个“最小闭环”</h3>
+          <div class="callout">
+            虽然当前还没有真正把文档内容解析成 chunk，但系统已经具备了“接收到文档 -> 固化为可追踪实体 -> 投递异步处理入口”的完整起点。这个起点是后续所有 ingest pipeline 的前置条件。
+          </div>
+
+          <h3>上传成功后数据库里会出现什么</h3>
+          <ul>
+            <li><strong>documents：</strong> 逻辑文档主体</li>
+            <li><strong>document_versions：</strong> 当前上传生成的第一个版本，<code>version_no = 1</code></li>
+            <li><strong>ingest_tasks：</strong> 当前上传对应的异步任务记录，初始状态为 <code>queued</code></li>
+          </ul>
+        </section>
+
+        <section id="design" class="panel">
+          <h2>5. 关键设计点为什么这样做</h2>
+          <p class="lead">这一节是面试最容易被追问的“为什么”。</p>
+
+          <h3>1）为什么 upload 不能传 document_id？</h3>
+          <p>因为规格把语义切得很清楚：<strong>upload 只负责创建新文档</strong>，而不是给已有文档加版本。已有文档产生新版本应由后续 <code>replace</code> 流程负责。这样可以避免一个接口同时承担“新建”和“更新”两套业务语义。</p>
+
+          <h3>2）为什么文件存储路径要按 document/version 分层？</h3>
+          <p>因为原始文件未来要支持版本演进、审计追踪、失败清理和 diff 对比。如果只用原始文件名，很容易冲突，也无法快速定位“某个 document 的某个 version 的原始文件在哪里”。</p>
+
+          <h3>3）为什么先存文件，再写数据库？</h3>
+          <p>因为数据库里的 <code>storage_path</code> 需要指向真实已存在的文件。如果反过来先写 DB，再发现文件写失败，就会留下不可用记录。当然这样做会带来另一个问题：如果 DB 提交失败，文件会残留。所以当前实现里又补了回滚清理逻辑，尽量删除刚写入的文件。</p>
+
+          <h3>4）为什么 document / version / task 要放在同一个事务里？</h3>
+          <p>因为这三者在业务上是一组原子结果。只成功其中一部分会导致系统进入不一致状态，比如有版本没有文档，或有任务没有版本。</p>
+
+          <h3>5）为什么 Celery dispatch 放在 commit 之后？</h3>
+          <p>因为如果任务已经发出，但数据库事务还没落地，worker 可能先读取任务却找不到对应记录，造成时序问题。先 commit 再 dispatch，可以保证 worker 拿到的是已持久化状态。</p>
+
+          <h3>6）为什么当前 worker 只做占位，不直接开始解析？</h3>
+          <p>因为规格要求严格按 Phase 推进。Phase 2 只负责把异步入口接起来，不允许偷跑到 Phase 3/4/5 的解析、chunk、embedding、索引逻辑。这样可以保证每个阶段的交付边界清晰、测试范围稳定。</p>
+        </section>
+
+        <section id="qa" class="panel">
+          <h2>6. 面试官高频追问与答题思路</h2>
+          <p class="lead">下面这些问题，几乎就是你在讲项目时最容易被追问的点。</p>
+
+          <div class="qa">
+            <div class="q">Q1：你们当前的上传接口已经完成到什么程度？</div>
+            <div class="a">A：已经完成了接收 multipart/form-data、校验文件、计算 SHA-256、将原始文件保存到本地存储、创建 document/document_version/ingest_task 记录，并投递 Celery 异步任务入口。真正的解析、切分和索引尚未在这个阶段实现。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q2：为什么要单独引入 ingest_task 表，而不是只改 document 状态？</div>
+            <div class="a">A：因为“文档实体”和“异步处理任务”是两个维度。一个 document 未来可能经历多次 replace、reindex 或失败重试，任务状态需要独立持久化和审计，不能把任务生命周期揉进 documents 表里。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q3：为什么 file_hash 在 Phase 2 就做了？</div>
+            <div class="a">A：因为 file_hash 是后续版本管理、重复文件识别、增量更新和审计追踪的重要基础字段。虽然当前还没做 diff，但把内容指纹先固化下来是合理且低耦合的准备工作。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q4：你们为什么把 route 写得很薄？</div>
+            <div class="a">A：这是典型的分层设计。route 只负责 HTTP 协议层解析与错误映射，真正业务编排放在 service。这样更利于测试、复用和后续扩展，也避免 API 层和业务逻辑耦合。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q5：如果数据库提交失败了，但文件已经落盘了怎么办？</div>
+            <div class="a">A：当前实现里在异常分支会 rollback 数据库事务，并尝试删除已经保存的文件，减少脏数据残留。这体现的是“文件系统与数据库不是天然原子一致”的工程意识。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q6：那你们现在能检索上传的文档了吗？</div>
+            <div class="a">A：还不能。当前只能把上传动作固化下来，并投递异步入口。真正进入可检索状态，要等后续 Phase 把解析、chunk、embedding、索引、检索链路补齐。</div>
+          </div>
+        </section>
+
+        <section id="verify" class="panel">
+          <h2>7. 你需要会的运行与验证命令</h2>
+          <p class="lead">你不一定已经实际执行了所有命令，但你至少要知道理论上的验证路径。</p>
+
+          <h3>依赖安装</h3>
+          <pre><code>pip install -e ".[test]"</code></pre>
+
+          <h3>启动基础设施</h3>
+          <pre><code>docker compose up -d postgres redis qdrant</code></pre>
+
+          <h3>启动全部服务</h3>
+          <pre><code>docker compose up -d --build</code></pre>
+
+          <h3>执行迁移</h3>
+          <pre><code>cd backend
+alembic upgrade head</code></pre>
+
+          <h3>运行测试</h3>
+          <pre><code>pytest
+pytest -m integration
+pytest backend/tests/test_upload.py</code></pre>
+
+          <h3>手动验证上传接口</h3>
+          <pre><code>POST /api/v1/documents/upload
+form-data:
+  file=@example.pdf
+  title=网络安全法
+  doc_type=law</code></pre>
+
+          <p class="footer-note">预期响应里至少包含：<code>document_id</code>、<code>version_id</code>、<code>task_id</code>、<code>status=queued</code>。</p>
+        </section>
+
+        <section id="notyet" class="panel">
+          <h2>8. 现在明确还没做什么</h2>
+          <p class="lead">面试时你越能明确边界，越显得你是真的理解项目，而不是在“虚报完成度”。</p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>能力</th>
+                <th>当前状态</th>
+                <th>为什么还没做</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>文档解析</td>
+                <td><span class="status no">未实现</span></td>
+                <td>属于后续 Phase 的 ingest 深化逻辑。</td>
+              </tr>
+              <tr>
+                <td>chunk 切分</td>
+                <td><span class="status no">未实现</span></td>
+                <td>要等解析/清洗之后再进入。</td>
+              </tr>
+              <tr>
+                <td>embedding / Qdrant</td>
+                <td><span class="status no">未实现</span></td>
+                <td>这是索引阶段，不在当前上传入口范围内。</td>
+              </tr>
+              <tr>
+                <td>PostgreSQL FTS 回填</td>
+                <td><span class="status no">未实现</span></td>
+                <td>依赖 chunk 生成后再构建。</td>
+              </tr>
+              <tr>
+                <td>replace 新版本流程</td>
+                <td><span class="status no">未实现</span></td>
+                <td>规格要求和 upload 分离，后续单独做。</td>
+              </tr>
+              <tr>
+                <td>检索问答</td>
+                <td><span class="status no">未实现</span></td>
+                <td>需要向量检索、关键词检索、RRF、rerank、answer generator 完整链路。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="talking" class="panel">
+          <h2>9. 你该怎么口述这个项目</h2>
+          <p class="lead">最后给你一个适合面试场景的口述模板。</p>
+          <div class="callout">
+            我做的是一个网络安全领域 RAG 知识库后端项目。这个项目是按 Phase 逐步推进的：最开始先完成工程骨架和基础设施联通，然后完成数据库模型和迁移。当前阶段推进到了 Phase 2，重点是把“新文档进入系统”的入口打通。现在系统已经可以接收上传文件，做基础合法性校验，计算文件哈希，把原始文件以 document/version 维度存储下来，随后在数据库里创建 document、document_version 和 ingest_task 三类记录，并把后续处理交给 Celery 异步任务入口。这样虽然还没有完成真正的解析和检索，但已经把后续 ingest pipeline 的起点搭建出来了，后面可以在这个基础上继续补解析、chunk、索引和问答链路。
+          </div>
+          <p class="footer-note">如果你把上面这段讲顺，再能回答“为什么 upload 不接受 document_id”“为什么 dispatch 要放在 commit 之后”“为什么当前 worker 只占位不解析”，基本就能把当前阶段讲得很扎实了。</p>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

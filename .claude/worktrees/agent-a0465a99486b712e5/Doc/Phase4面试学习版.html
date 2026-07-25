@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phase 4 学习文档｜从面试官提问角度理解当前项目</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --brand: #1d4ed8;
+      --brand-soft: #dbeafe;
+      --ok: #166534;
+      --warn: #92400e;
+      --danger: #991b1b;
+      --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    .container {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 48px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 50%, #7c3aed 100%);
+      color: #fff;
+      border-radius: 24px;
+      padding: 40px 32px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      margin: 0 0 12px;
+      font-size: 34px;
+      line-height: 1.25;
+    }
+
+    .hero p { margin: 8px 0; color: rgba(255,255,255,0.93); }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .badge {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.18);
+      font-size: 14px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 290px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .toc, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .toc {
+      position: sticky;
+      top: 20px;
+      padding: 20px;
+    }
+
+    .toc h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .toc a {
+      display: block;
+      text-decoration: none;
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 10px;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .toc a:hover {
+      background: #eff6ff;
+      color: var(--brand);
+    }
+
+    .content { display: grid; gap: 20px; }
+    .panel { padding: 24px; }
+    .panel h2 { margin-top: 0; font-size: 24px; }
+    .panel h3 { margin-top: 24px; margin-bottom: 10px; font-size: 18px; }
+    .lead { color: var(--muted); margin-top: -4px; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      background: #fff;
+    }
+
+    .card h4 { margin: 0 0 8px; font-size: 17px; }
+
+    .callout {
+      border-left: 5px solid var(--brand);
+      background: var(--brand-soft);
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin: 16px 0;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .done { background: #dcfce7; color: var(--ok); }
+    .todo { background: #fef3c7; color: var(--warn); }
+    .no { background: #fee2e2; color: var(--danger); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f9fafb;
+      color: #374151;
+      font-size: 14px;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    pre {
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 16px;
+      border-radius: 14px;
+      overflow-x: auto;
+      font-size: 13px;
+      font-family: Consolas, Monaco, "Courier New", monospace;
+    }
+
+    code {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+    }
+
+    .qa {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      margin-top: 14px;
+      background: #fcfcfd;
+    }
+
+    .qa .q { font-weight: 700; margin-bottom: 8px; }
+    .qa .a { color: #374151; }
+
+    .footer-note { color: var(--muted); font-size: 14px; }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .toc { position: static; }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>CyberSec RAG Agent · Phase 4 学习文档</h1>
+      <p>从“面试官会怎么追问你”这个角度，理解当前项目在 <strong>Phase 4</strong> 到底已经具备了什么能力、为什么要引入 parent-child chunk、以及为什么现在还不能说系统已经可检索。</p>
+      <div class="badge-row">
+        <span class="badge">当前阶段：Phase 4</span>
+        <span class="badge">重点：结构化切分 / parent-child / chunk_hash / chunk 落库</span>
+        <span class="badge">仍未进入：embedding / Qdrant / FTS / retrieval</span>
+      </div>
+    </section>
+
+    <div class="layout">
+      <aside class="toc">
+        <h2>目录</h2>
+        <a href="#intro">1. 一句话定义当前项目状态</a>
+        <a href="#upgrade">2. Phase 4 相比 Phase 3 升级了什么</a>
+        <a href="#implemented">3. 当前到底实现了哪些内容</a>
+        <a href="#flow">4. 切分链路怎么讲清楚</a>
+        <a href="#design">5. 关键设计点为什么这样做</a>
+        <a href="#qa">6. 面试官高频追问与答题思路</a>
+        <a href="#verify">7. 你需要会的运行与验证命令</a>
+        <a href="#notyet">8. 现在明确还没做什么</a>
+        <a href="#talking">9. 你该怎么口述这个项目</a>
+      </aside>
+
+      <main class="content">
+        <section id="intro" class="panel">
+          <h2>1. 一句话定义当前项目状态</h2>
+          <p class="lead">面试里一个非常关键的能力，是能把“当前阶段到底完成到哪里”讲得既准确又不过度。</p>
+          <div class="callout">
+            <strong>推荐表述：</strong><br />
+            这是一个面向网络安全知识资料的 RAG 后端项目，当前已经完成到 <strong>Phase 4</strong>。系统不仅能接收文档、完成解析与基础清洗，还已经能把法规、标准、教材、手册和普通文本切成结构化 chunk，建立 parent-child 关系，生成稳定的 <code>chunk_hash</code>，并把 chunk 数据落到 PostgreSQL 中。但当前仍未进入 embedding、向量索引、关键词索引和检索问答阶段。
+          </div>
+        </section>
+
+        <section id="upgrade" class="panel">
+          <h2>2. Phase 4 相比 Phase 3 升级了什么</h2>
+          <p class="lead">面试官更关注“系统能力发生了什么本质变化”，而不仅仅是“你多写了一个 service”。</p>
+          <div class="grid-3">
+            <div class="card">
+              <h4>Phase 2 <span class="status done">已完成</span></h4>
+              <p>解决上传入口、原始文件落盘和异步任务起点问题。</p>
+            </div>
+            <div class="card">
+              <h4>Phase 3 <span class="status done">已完成</span></h4>
+              <p>解决文件解析、页码保留、基础清洗和失败状态回写问题。</p>
+            </div>
+            <div class="card">
+              <h4>Phase 4 <span class="status done">当前重点</span></h4>
+              <p>解决“文本如何变成可落库、可引用、可增量更新的 chunk 结构”问题。</p>
+            </div>
+          </div>
+
+          <h3>本质升级</h3>
+          <ul>
+            <li>系统从“只有清洗后的文本”升级为“已经有结构化 chunk 数据”。</li>
+            <li>worker 不再止步于解析/清洗，而是开始真正写入 `chunks` 表。</li>
+            <li>后续 Phase 5 的 embedding / index 终于有了明确输入对象。</li>
+          </ul>
+        </section>
+
+        <section id="implemented" class="panel">
+          <h2>3. 当前到底实现了哪些内容</h2>
+          <p class="lead">你要能把“做了什么”和“故意没做什么”分得非常清楚。</p>
+
+          <h3>已完成模块</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>模块</th>
+                <th>当前状态</th>
+                <th>你在面试里要怎么描述</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>统一切分中间结构</td>
+                <td><span class="status done">已完成</span></td>
+                <td>现在有统一的 chunk 中间对象，便于测试和后续落库。</td>
+              </tr>
+              <tr>
+                <td>法规 / 标准切分</td>
+                <td><span class="status done">已完成</span></td>
+                <td>优先按章/节/条切分，并尽量保留 article_no。</td>
+              </tr>
+              <tr>
+                <td>教材 / 手册 / note 切分</td>
+                <td><span class="status done">已完成</span></td>
+                <td>优先利用标题层级和段落边界，代码块尽量整体保留。</td>
+              </tr>
+              <tr>
+                <td>fallback recursive chunker</td>
+                <td><span class="status done">已完成</span></td>
+                <td>结构识别不足时仍可稳定输出可用 chunk。</td>
+              </tr>
+              <tr>
+                <td>parent-child 关系</td>
+                <td><span class="status done">已完成</span></td>
+                <td>child 未来用于检索，parent 未来用于上下文回填。</td>
+              </tr>
+              <tr>
+                <td>chunk_hash</td>
+                <td><span class="status done">已完成</span></td>
+                <td>基于 normalized_text 生成稳定 hash，为后续 diff 更新打基础。</td>
+              </tr>
+              <tr>
+                <td>chunks 表持久化</td>
+                <td><span class="status done">已完成</span></td>
+                <td>worker 已能把 chunk 数据落入 PostgreSQL。</td>
+              </tr>
+              <tr>
+                <td>embedding / index / query</td>
+                <td><span class="status no">未做</span></td>
+                <td>仍严格留在后续 Phase。</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>涉及到的关键文件</h3>
+          <div class="grid-2">
+            <div class="card">
+              <h4><code>backend/app/services/chunk_service.py</code></h4>
+              <p>Phase 4 核心：按文档类型切分、构造 parent-child、组织 metadata。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/app/utils/hash_utils.py</code></h4>
+              <p>提供 <code>normalized_text</code> 和稳定的 <code>chunk_hash</code>。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/app/models/chunk.py</code></h4>
+              <p>定义 chunk 持久化结构，包括页码、章节、article_no 和 parent_chunk_id。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/app/workers/ingest_worker.py</code></h4>
+              <p>把解析 → 清洗 → 切分 → 落库整条链路串起来。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/tests/test_chunk_service.py</code></h4>
+              <p>覆盖切分策略、hash 稳定性和 metadata 组织。</p>
+            </div>
+            <div class="card">
+              <h4><code>backend/tests/test_ingest_worker.py</code></h4>
+              <p>覆盖 worker 成功落库与失败回写行为。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="flow" class="panel">
+          <h2>4. 切分链路怎么讲清楚</h2>
+          <p class="lead">真正体现理解深度的，不是“我做了 chunking”，而是你能把结构化切分讲成一个完整闭环。</p>
+
+          <h3>推荐你背下来的处理顺序</h3>
+          <pre><code>客户端上传文件
+  -> upload_service 保存原始文件并创建 document/version/task
+  -> worker 收到 ingest_document_task
+  -> parser_service 解析原始文件
+  -> cleaner_service 做基础清洗
+  -> chunk_service 按 doc_type 选择 chunker
+  -> 生成 parent / child chunk
+  -> 规范化文本并生成 chunk_hash
+  -> build_chunk_records 映射为 ORM 可落库记录
+  -> 写入 PostgreSQL chunks 表
+  -> 更新 ingest_task 状态</code></pre>
+
+          <h3>为什么 Phase 4 很关键</h3>
+          <div class="callout">
+            因为从这一阶段开始，系统第一次拥有了“后续可检索、可引用、可增量更新”的结构化知识单元。没有 Phase 4，后面的 embedding 和检索都没有稳定输入对象。
+          </div>
+
+          <h3>为什么 parent-child 现在就必须做</h3>
+          <p>因为后续检索和答案生成对上下文的需求不同：child 需要更细粒度、适合检索；parent 需要更大上下文、适合答案回填。所以现在不只是“切成很多块”，而是要从现在开始建立两层结构。</p>
+        </section>
+
+        <section id="design" class="panel">
+          <h2>5. 关键设计点为什么这样做</h2>
+          <p class="lead">面试里最常见的追问，几乎都在“为什么”上。</p>
+
+          <h3>1）为什么 law / standard 和 textbook / manual 要分开切？</h3>
+          <p>因为它们的组织方式完全不同。法规和标准通常是章/节/条的结构；教材和手册更像标题层级 + 段落/代码块。强行用同一个切分器，metadata 会变得非常混乱，也很难解释。</p>
+
+          <h3>2）为什么 fallback recursive chunker 仍然需要？</h3>
+          <p>因为真实文档并不总是结构清晰。TXT 可能没有标题，PDF 结构可能抽取不稳定。如果没有兜底策略，系统会在“结构识别失败”时直接失去可用 chunk 输出。</p>
+
+          <h3>3）为什么 child chunk 必须保留 article_no？</h3>
+          <p>因为后续检索命中 child 时，引用链路仍然需要回答“这是哪一条”。如果拆分后 article_no 丢了，法规类场景的可解释性会大幅下降。</p>
+
+          <h3>4）为什么 chunk_hash 基于 normalized_text 而不是原始 text？</h3>
+          <p>因为原始 text 容易受到换行、空格、格式差异影响。用 normalized_text 可以降低无意义格式波动对 hash 的干扰，同时保留对真实内容变化的敏感性，这对后续 chunk diff 非常重要。</p>
+
+          <h3>5）为什么现在只落 PostgreSQL，不直接上 Qdrant？</h3>
+          <p>因为 Phase 4 的职责边界就是“把文本变成结构化 chunk 并落库”。如果现在顺手把 embedding、Qdrant 或 FTS 也做了，就会直接越界进入 Phase 5/6。</p>
+
+          <h3>6）为什么当前任务完成不等于“系统已经能检索”？</h3>
+          <p>因为现在完成的只是解析、清洗、切分和 chunk 落库。后面还缺 embedding、向量索引、关键词索引、融合排序和查询接口。所以当前完成只能理解为“Phase 4 阶段目标完成”。</p>
+        </section>
+
+        <section id="qa" class="panel">
+          <h2>6. 面试官高频追问与答题思路</h2>
+          <p class="lead">下面这些问题，就是你讲到当前阶段时大概率会被追问的点。</p>
+
+          <div class="qa">
+            <div class="q">Q1：你们现在的 chunk 是怎么切的？</div>
+            <div class="a">A：不是单一策略。法规/标准优先按章节条切，教材/手册优先按标题层级和段落切，结构不清晰时走 fallback recursive chunker。这样可以让 chunk 规则更贴近文档本身的语义结构。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q2：为什么要设计 parent-child 两层？</div>
+            <div class="a">A：因为后续检索和回答阶段对上下文粒度要求不同。child 更适合细粒度召回，parent 更适合命中后的上下文回填。如果现在不分层，后续很难同时兼顾召回精度和答案上下文完整性。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q3：为什么 chunk_hash 在现在这个阶段就做？</div>
+            <div class="a">A：因为后续增量更新和 chunk diff 必须依赖稳定内容指纹。Phase 4 正好是首次正式生成 chunk 的阶段，所以最合理的时机就是现在。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q4：如果章节/条款识别不到怎么办？</div>
+            <div class="a">A：当前策略是不猜测、不伪造。识别不到时就降级为 fallback chunking，同时把 chapter/section/article_no 保持为 null，这样虽然信息少一些，但语义上更可靠。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q5：你们现在的 chunk 已经可检索了吗？</div>
+            <div class="a">A：还不行。现在 chunk 只是落在 PostgreSQL 里，embedding、Qdrant、FTS 和 retrieval 逻辑都还没做，所以只能说“结构化数据准备好了”，不能说“检索链路完成了”。</div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q6：worker 为什么要在这个阶段就负责 chunk 落库？</div>
+            <div class="a">A：因为从系统流程看，上传后的异步处理链路本来就应该承担后续 ingest 阶段工作。Phase 4 只是把 worker 从“解析/清洗入口”继续推进到“切分并落库”，这符合分阶段演进方式，也保证了主链路的一致性。</div>
+          </div>
+        </section>
+
+        <section id="verify" class="panel">
+          <h2>7. 你需要会的运行与验证命令</h2>
+          <p class="lead">你不一定已经实际跑过所有命令，但你至少要知道 Phase 4 的理论验收路径。</p>
+
+          <h3>依赖安装</h3>
+          <pre><code>pip install -e ".[test]"</code></pre>
+
+          <h3>执行迁移</h3>
+          <pre><code>cd backend
+alembic upgrade head</code></pre>
+
+          <h3>运行 Phase 4 测试</h3>
+          <pre><code>pytest backend/tests/test_chunk_service.py
+pytest backend/tests/test_ingest_worker.py -m integration</code></pre>
+
+          <h3>运行默认测试</h3>
+          <pre><code>pytest</code></pre>
+
+          <h3>手动验证思路</h3>
+          <pre><code>上传一个法规 / 教材 / 普通文本样例
+  -> 确认 ingest_task 进入 processing
+  -> worker 完成解析、清洗、切分与 chunk 落库
+  -> 检查 PostgreSQL chunks 表
+  -> 验证 parent-child 关系、chunk_hash、page_start/page_end、article_no 等字段</code></pre>
+
+          <p class="footer-note">注意：当前 worker 成功只代表 Phase 4 的切分与落库成功，不代表 embedding、索引或检索已经完成。</p>
+        </section>
+
+        <section id="notyet" class="panel">
+          <h2>8. 现在明确还没做什么</h2>
+          <p class="lead">面试时越能把边界讲清楚，越能体现你是真的理解项目而不是在“虚报完成度”。</p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>能力</th>
+                <th>当前状态</th>
+                <th>为什么还没做</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>embedding 生成</td>
+                <td><span class="status no">未实现</span></td>
+                <td>这是 Phase 5 的核心内容。</td>
+              </tr>
+              <tr>
+                <td>Qdrant upsert</td>
+                <td><span class="status no">未实现</span></td>
+                <td>需要 embedding 之后才能建立向量检索单元。</td>
+              </tr>
+              <tr>
+                <td>PostgreSQL FTS 写入</td>
+                <td><span class="status no">未实现</span></td>
+                <td>关键词检索索引仍属于后续阶段。</td>
+              </tr>
+              <tr>
+                <td>retrieval / RRF / rerank</td>
+                <td><span class="status no">未实现</span></td>
+                <td>这些属于 Phase 6 及之后的查询链路。</td>
+              </tr>
+              <tr>
+                <td>answer generation</td>
+                <td><span class="status no">未实现</span></td>
+                <td>必须建立在检索链路之上。</td>
+              </tr>
+              <tr>
+                <td>chunk diff 增量更新</td>
+                <td><span class="status no">未实现</span></td>
+                <td>虽然 hash 基础已准备好，但 replace/diff 仍在后续 Phase。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="talking" class="panel">
+          <h2>9. 你该怎么口述这个项目</h2>
+          <p class="lead">最后给你一个适合面试场景的口述模板。</p>
+          <div class="callout">
+            我做的是一个网络安全领域 RAG 知识库后端项目。这个项目是按 Phase 逐步推进的：先完成工程骨架和基础设施联通，再完成数据库地基、上传入口、解析与清洗。当前推进到 Phase 4，核心是把可解析的文本变成结构化 chunk 数据。现在系统已经能针对法规、标准、教材和普通文本采用不同切分策略，生成 parent-child 两层 chunk，保留页码和章节/条款等 metadata，并基于 normalized_text 生成稳定的 chunk_hash，最后把 chunk 落到 PostgreSQL 里。这样虽然还没有进入向量索引和检索阶段，但已经把后续检索系统最关键的数据层准备好了。
+          </div>
+          <p class="footer-note">如果你把上面这段讲顺，再能回答“为什么要分不同 chunker”“为什么现在就做 parent-child”“为什么 chunk_hash 基于 normalized_text”“为什么当前完成还不等于可检索”，基本就能把当前阶段讲得很扎实了。</p>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

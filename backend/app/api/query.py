@@ -117,6 +117,7 @@ def answer_query(
             top_k=request.top_k,
             explicit_filters=request.filters.model_dump(),
             debug=request.debug,
+            retriever=HybridRetriever.from_db(db, allow_embedding_fallback=True),
         )
         prepared = result.preparation
     except ValueError as exc:

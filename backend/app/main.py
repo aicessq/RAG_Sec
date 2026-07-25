@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -93,6 +93,21 @@ def health_root() -> dict[str, str]:
 
 
 # ---- 全局异常兜底 ----
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    """保持业务异常的标准顶层 ``error`` 响应信封。"""
+    content = exc.detail
+    if not (isinstance(content, dict) and "error" in content):
+        content = {
+            "error": {
+                "code": "http_error",
+                "message": str(content),
+                "details": {},
+            }
+        }
+    return JSONResponse(status_code=exc.status_code, content=content, headers=exc.headers)
+
+
 # Phase 0 仅做最小统一兜底：未捕获的异常返回 internal_error，
 # 避免把内部堆栈透出给用户（规格 §2.14 / §3.3）。
 # 完整的统一错误响应体系在后续 Phase 落地。

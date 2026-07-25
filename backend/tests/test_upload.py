@@ -81,9 +81,9 @@ def test_upload_pdf_success(upload_client: TestClient, db_session) -> None:
 
     dispatched = upload_client._dispatched_tasks  # type: ignore[attr-defined]
     assert len(dispatched) == 1
-    assert dispatched[0]["document_id"] == body["document_id"]
-    assert dispatched[0]["version_id"] == body["version_id"]
-    assert dispatched[0]["task_id"] == body["task_id"]
+    assert str(dispatched[0]["document_id"]) == body["document_id"]
+    assert str(dispatched[0]["version_id"]) == body["version_id"]
+    assert str(dispatched[0]["task_id"]) == body["task_id"]
 
 
 def test_upload_rejects_unsupported_file_type(upload_client: TestClient) -> None:
@@ -95,7 +95,7 @@ def test_upload_rejects_unsupported_file_type(upload_client: TestClient) -> None
 
     assert response.status_code == 415
     body = response.json()
-    assert body["detail"]["error"]["code"] == "unsupported_file_type"
+    assert body["error"]["code"] == "unsupported_file_type"
 
 
 def test_upload_rejects_document_id_parameter(upload_client: TestClient) -> None:
@@ -111,7 +111,7 @@ def test_upload_rejects_document_id_parameter(upload_client: TestClient) -> None
 
     assert response.status_code == 400
     body = response.json()
-    assert body["detail"]["error"]["code"] == "invalid_request"
+    assert body["error"]["code"] == "invalid_request"
 
 
 def test_upload_requires_title(upload_client: TestClient) -> None:

@@ -21,9 +21,9 @@ htmlcov/
 !.env.example
 
 # 本地模型文件（规格 §2.7：models/ 必须忽略，禁止提交模型文件）
-models/
-!models/embedding/README.md
-!models/reranker/README.md
+/models/
+!/models/embedding/README.md
+!/models/reranker/README.md
 
 # 本地存储的上传原始文件（后续 Phase 用）
 storage/

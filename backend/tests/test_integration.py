@@ -9,7 +9,7 @@
 2. 它们用于 Phase 0 的“基础服务联通性验证”验收：
    在 docker compose up 拉起基础设施后，从宿主机用 localhost 跑这组测试，
    即可复现验证 PG/Redis/Qdrant 连接正常。
-3. 每个测试独立 try/except 并 skip，避免某个组件没起时让整组测试红。
+3. 这条集成测试通道是严格验收：依赖不可达必须失败，不能用 skip 伪装成通过。
 """
 
 from __future__ import annotations
@@ -24,14 +24,13 @@ if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
 
-def _skip_if_unreachable(check_fn) -> None:
-    """调用检查函数；若返回 False 则跳过，说明对应服务当前不可达。"""
+def _assert_reachable(check_fn) -> None:
+    """调用检查函数；依赖不可达时让集成验收明确失败。"""
     try:
         ok = check_fn()
     except Exception as exc:  # noqa: BLE001
-        pytest.skip(f"服务不可达：{exc}")
-    if not ok:
-        pytest.skip("服务未连接成功，可能未启动 docker compose")
+        pytest.fail(f"服务不可达：{exc}")
+    assert ok, "服务未连接成功，请确认真实基础设施已启动"
 
 
 @pytest.mark.integration
@@ -39,7 +38,7 @@ def test_postgres_connection() -> None:
     """验证 PostgreSQL 可连接并执行 SELECT 1。"""
     from app.db.session import check_database_connection
 
-    _skip_if_unreachable(check_database_connection)
+    _assert_reachable(check_database_connection)
     assert check_database_connection() is True
 
 
@@ -48,7 +47,7 @@ def test_redis_connection() -> None:
     """验证 Redis 可连接并响应 PING。"""
     from app.dependencies import check_redis_connection
 
-    _skip_if_unreachable(check_redis_connection)
+    _assert_reachable(check_redis_connection)
     assert check_redis_connection() is True
 
 
@@ -57,7 +56,7 @@ def test_qdrant_connection() -> None:
     """验证 Qdrant 可连接并能列出集合。"""
     from app.dependencies import check_qdrant_connection
 
-    _skip_if_unreachable(check_qdrant_connection)
+    _assert_reachable(check_qdrant_connection)
     assert check_qdrant_connection() is True
 
 
@@ -67,6 +66,4 @@ def test_health_ready_all_ok(client) -> None:
     response = client.get("/api/v1/health/ready")
     assert response.status_code == 200
     body = response.json()
-    if body["status"] != "ok":
-        pytest.skip(f"部分组件未就绪：{body['components']}")
-    assert body["status"] == "ok"
+    assert body["status"] == "ok", f"部分组件未就绪：{body['components']}"

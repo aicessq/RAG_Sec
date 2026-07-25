@@ -86,7 +86,16 @@ services:
       POSTGRES_HOST: postgres
       REDIS_HOST: redis
       QDRANT_HOST: qdrant
+      STORAGE_ROOT: /app/storage
+      EMBEDDING_MODEL_PATH: /app/models/embedding
+      RERANKER_MODEL_PATH: /app/models/reranker
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
       DEBUG: ${DEBUG:-false}
+    volumes:
+      - shared_storage:/app/storage
+      - ./models:/app/models:ro
+    command: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
     ports:
       - "${BACKEND_PORT:-8000}:8000"
 
@@ -108,10 +117,19 @@ services:
       POSTGRES_HOST: postgres
       REDIS_HOST: redis
       QDRANT_HOST: qdrant
+      STORAGE_ROOT: /app/storage
+      EMBEDDING_MODEL_PATH: /app/models/embedding
+      RERANKER_MODEL_PATH: /app/models/reranker
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
       DEBUG: ${DEBUG:-false}
-    command: ["celery", "-A", "app.workers.celery_app.celery_app", "worker", "--loglevel=INFO"]
+    volumes:
+      - shared_storage:/app/storage
+      - ./models:/app/models:ro
+    command: ["sh", "-c", "alembic upgrade head && celery -A app.workers.celery_app.celery_app worker --loglevel=INFO"]
 
 volumes:
   postgres_data:
   redis_data:
   qdrant_data:
+  shared_storage:

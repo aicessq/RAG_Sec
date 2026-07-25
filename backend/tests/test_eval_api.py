@@ -45,4 +45,4 @@ def test_eval_run_api_returns_bad_request_for_invalid_input(client, monkeypatch)
 
     assert response.status_code == 400
     payload = response.json()
-    assert payload["detail"]["error"]["code"] == "invalid_request"
+    assert payload["error"]["code"] == "invalid_request"

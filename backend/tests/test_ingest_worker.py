@@ -44,7 +44,7 @@ class FakeIndexServiceFactory:
     def __init__(self, fake_service: FakeIndexService) -> None:
         self.fake_service = fake_service
 
-    def from_db(self, db):
+    def from_db(self, db, *, allow_embedding_fallback=False):
         return self.fake_service
 
 
@@ -149,7 +149,7 @@ def test_ingest_worker_marks_failed_when_index_build_raises(db_session, monkeypa
             raise RuntimeError("索引建立失败")
 
     class FailingIndexServiceFactory:
-        def from_db(self, db):
+        def from_db(self, db, *, allow_embedding_fallback=False):
             return FailingIndexService()
 
     monkeypatch.setattr(

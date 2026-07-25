@@ -75,7 +75,15 @@ class QueryService:
             filters=filters,
         )
 
-    def answer(self, *, query: str, top_k: int, explicit_filters: dict, debug: bool = False) -> QueryAnswerServiceResult:
+    def answer(
+        self,
+        *,
+        query: str,
+        top_k: int,
+        explicit_filters: dict,
+        debug: bool = False,
+        retriever: HybridRetriever | None = None,
+    ) -> QueryAnswerServiceResult:
         """执行完整证据约束问答链路并写入 query log。"""
         _ = debug
         started_at = time.perf_counter()
@@ -112,7 +120,8 @@ class QueryService:
                 latency_ms=latency_ms,
             )
 
-        retrieval = HybridRetriever.from_db(self.db, allow_embedding_fallback=True).retrieve(
+        active_retriever = retriever or HybridRetriever.from_db(self.db, allow_embedding_fallback=True)
+        retrieval = active_retriever.retrieve(
             query=prepared.rewritten.rewritten_query,
             top_k=top_k,
             filters=effective_filters,

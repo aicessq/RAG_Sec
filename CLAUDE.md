@@ -145,7 +145,10 @@ pytest backend/tests/test_integration.py::test_health_ready_all_ok -m integratio
 Important details:
 - `pyproject.toml` sets `testpaths = ["backend/tests"]`.
 - Default pytest options exclude integration tests with `-m 'not integration'`.
-- Database/infrastructure-heavy tests live in the `integration` lane and expect PostgreSQL/Redis/Qdrant to be reachable.
+- The integration lane is a strict gate: PostgreSQL/Redis/Qdrant unavailability fails rather than skips. Run it against a disposable test database because fixtures migrate and truncate business tables.
+- On machines with HTTP proxies, set `NO_PROXY=localhost,127.0.0.1` for local Qdrant/backend tests; otherwise localhost traffic may return a proxy-generated 502.
+- Docker backend and worker share `/app/storage`; do not remove that volume mount or give the processes different `STORAGE_ROOT` values.
+- `models/` contains only ignored local weights. Deterministic embedding/reranker fallbacks validate orchestration but do not count as real-model quality verification.
 - There is currently **no Python lint command configured** in `pyproject.toml`; do not invent Ruff/Black/mypy automation in docs or scripts.
 - The frontend `package.json` defines `dev`, `build`, and `preview`, but no frontend test or lint scripts.
 
