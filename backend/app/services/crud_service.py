@@ -219,6 +219,11 @@ def create_eval_run(
     return run
 
 
+def get_ingest_task(db: Session, task_id: uuid.UUID) -> IngestTask | None:
+    """以数据库为准按主键查询入库或替换任务。"""
+    return db.get(IngestTask, task_id)
+
+
 def get_by_id(db: Session, model: type[T], object_id: uuid.UUID) -> T | None:
     """按主键查询单个 ORM 对象。"""
     return db.get(model, object_id)

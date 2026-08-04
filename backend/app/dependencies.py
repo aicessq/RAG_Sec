@@ -22,6 +22,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from collections.abc import Generator
 
 from redis import Redis
@@ -29,6 +30,7 @@ from redis.exceptions import RedisError
 
 from app.config import get_settings
 from app.db.session import SessionLocal
+from app.workers.celery_app import celery_app
 
 # Qdrant 客户端在 import 阶段尽量延迟创建，避免在未启 Qdrant 时影响启动。
 # 这里用懒加载函数获取客户端。
@@ -99,6 +101,38 @@ def check_qdrant_connection() -> bool:
     except Exception as exc:  # noqa: BLE001 - 兜底
         logger.error("Qdrant 连接检查出现未知异常: %s", exc)
         return False
+
+
+REQUIRED_CELERY_TASKS = {
+    "app.workers.ingest_worker.ingest_document_task",
+    "app.workers.ingest_worker.replace_document_task",
+}
+_worker_registration_cache: tuple[float, dict[str, list[str]]] | None = None
+
+
+def check_celery_worker_connection() -> tuple[bool, int, bool]:
+    """短超时探活 Worker；较重的任务注册查询使用进程内短期缓存。"""
+    global _worker_registration_cache
+    inspector = celery_app.control.inspect(timeout=settings.celery_worker_ping_timeout_seconds)
+    ping_responses = inspector.ping() or {}
+    worker_count = len(ping_responses)
+    if worker_count == 0:
+        return False, 0, False
+
+    now = time.monotonic()
+    if (
+        _worker_registration_cache is None
+        or now - _worker_registration_cache[0] >= settings.celery_worker_registration_cache_seconds
+    ):
+        registered_by_worker = inspector.registered() or {}
+        _worker_registration_cache = (now, registered_by_worker)
+    else:
+        registered_by_worker = _worker_registration_cache[1]
+    required_tasks_registered = all(
+        REQUIRED_CELERY_TASKS.issubset(set(registered_by_worker.get(worker, [])))
+        for worker in ping_responses
+    )
+    return True, worker_count, required_tasks_registered
 
 
 # ---- FastAPI 数据库会话依赖 ----

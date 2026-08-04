@@ -7,11 +7,18 @@ Phase 9 开始补齐：
 
 from __future__ import annotations
 
+import uuid
+
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
-from app.schemas.document import DocumentDeleteResponse, DocumentReplaceResponse
+from app.schemas.document import (
+    DocumentDeleteResponse,
+    DocumentReplaceResponse,
+    DocumentTaskResponse,
+)
+from app.services.crud_service import get_ingest_task as fetch_ingest_task
 from app.services.storage_service import StorageError
 from app.services.update_service import (
     DocumentNotFoundError,
@@ -22,6 +29,47 @@ from app.services.update_service import (
 )
 
 router = APIRouter(prefix="/documents", tags=["documents"])
+
+
+@router.get("/tasks/{task_id}", response_model=DocumentTaskResponse)
+def get_document_task(
+    task_id: uuid.UUID,
+    db: Session = Depends(get_db),
+) -> DocumentTaskResponse:
+    """查询持久化的入库或替换任务状态。"""
+    task = fetch_ingest_task(db, task_id)
+    if task is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": {
+                    "code": "not_found",
+                    "message": "任务不存在",
+                    "details": {"task_id": str(task_id)},
+                }
+            },
+        )
+    return DocumentTaskResponse(
+        id=str(task.id),
+        document_id=str(task.document_id),
+        version_id=str(task.version_id),
+        task_type=task.task_type,
+        status=task.status,
+        message=task.message,
+        error_message=task.error_message,
+        progress=task.progress,
+        celery_task_id=task.celery_task_id,
+        dispatch_status=task.dispatch_status,
+        dispatched_at=task.dispatched_at,
+        attempt_count=task.attempt_count,
+        recovery_count=task.recovery_count,
+        worker_id=task.worker_id,
+        attempt_token=str(task.attempt_token) if task.attempt_token else None,
+        last_heartbeat_at=task.last_heartbeat_at,
+        created_at=task.created_at,
+        updated_at=task.updated_at,
+        finished_at=task.finished_at,
+    )
 
 
 @router.post("/{document_id}/replace", response_model=DocumentReplaceResponse)

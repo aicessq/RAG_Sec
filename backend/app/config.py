@@ -62,6 +62,19 @@ class Settings(BaseSettings):
     redis_db: int = Field(default=0, description="Redis 库编号")
     redis_password: str | None = Field(default=None, description="Redis 密码，可为空")
 
+    # ---- Celery Worker 与异步任务恢复配置 ----
+    celery_worker_ping_timeout_seconds: float = Field(default=2.0, gt=0)
+    celery_worker_registration_cache_seconds: int = Field(default=30, ge=0)
+    queued_stale_seconds: int = Field(default=300, gt=0)
+    dispatched_queue_stale_seconds: int = Field(default=900, gt=0)
+    worker_heartbeat_interval_seconds: int = Field(default=30, gt=0)
+    processing_lease_timeout_seconds: int = Field(default=180, gt=0)
+    task_recovery_interval_seconds: int = Field(default=60, gt=0)
+    task_recovery_batch_size: int = Field(default=50, gt=0)
+    task_max_recovery_count: int = Field(default=3, ge=0)
+    task_auto_recover_processing: bool = Field(default=False)
+    task_status_redis_ttl_seconds: int = Field(default=86400, gt=0)
+
     # ---- Qdrant 配置 ----
     qdrant_host: str = Field(default="localhost", description="Qdrant 主机")
     qdrant_port: int = Field(default=6333, description="Qdrant HTTP 端口")

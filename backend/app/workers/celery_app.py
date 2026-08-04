@@ -15,7 +15,7 @@ celery_app = Celery(
     "cybersec_rag_agent",
     broker=settings.celery_broker_url,
     backend=settings.celery_result_backend,
-    include=["app.workers.ingest_worker"],
+    include=["app.workers.ingest_worker", "app.workers.recovery_worker"],
 )
 
 celery_app.conf.update(
@@ -24,4 +24,14 @@ celery_app.conf.update(
     result_serializer="json",
     timezone="UTC",
     enable_utc=True,
+    worker_prefetch_multiplier=1,
+    # Phase D 幂等验收前不启用 late ack / worker-lost 重投，避免重复外部索引副作用。
+    task_acks_late=False,
+    task_reject_on_worker_lost=False,
+    beat_schedule={
+        "recover-stale-ingest-tasks": {
+            "task": "app.workers.recovery_worker.recover_stale_tasks",
+            "schedule": settings.task_recovery_interval_seconds,
+        }
+    },
 )

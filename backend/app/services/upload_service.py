@@ -25,6 +25,7 @@ from app.config import get_settings
 from app.models.document import Document
 from app.models.document_version import DocumentVersion
 from app.models.ingest_task import IngestTask
+from app.services.ingest_task_service import mark_dispatch_failed, mark_dispatch_succeeded
 from app.services.storage_service import LocalStorageService, StorageError
 from app.utils.hash_utils import calculate_file_hash
 
@@ -102,15 +103,19 @@ def dispatch_ingest_task(
     version_id: uuid.UUID,
     task_id: uuid.UUID,
     file_path: str,
+    celery_task_id: str,
 ) -> None:
-    """投递 Celery 入库任务。"""
+    """使用预生成的消息 ID 投递 Celery 入库任务。"""
     from app.workers.ingest_worker import ingest_document_task
 
-    ingest_document_task.delay(
-        document_id=str(document_id),
-        version_id=str(version_id),
-        task_id=str(task_id),
-        file_path=file_path,
+    ingest_document_task.apply_async(
+        kwargs={
+            "document_id": str(document_id),
+            "version_id": str(version_id),
+            "task_id": str(task_id),
+            "file_path": file_path,
+        },
+        task_id=celery_task_id,
     )
 
 
@@ -143,6 +148,7 @@ async def process_upload(
     service = storage_service or LocalStorageService()
     file_hash = calculate_file_hash(file_bytes)
     saved_path: Path | None = None
+    records_committed = False
 
     try:
         saved_path = service.save_file(
@@ -181,6 +187,7 @@ async def process_upload(
             version_id=version_id,
             task_type="ingest",
             status="queued",
+            dispatch_status="pending",
             progress=0,
             message="Phase 2：文件已接收，等待异步入库入口处理",
         )
@@ -191,13 +198,36 @@ async def process_upload(
         db.flush()
         document.current_version_id = version_id
         db.commit()
+        records_committed = True
 
-        dispatch_ingest_task(
-            document_id=document_id,
-            version_id=version_id,
-            task_id=task_id,
-            file_path=str(saved_path),
-        )
+        celery_task_id = str(uuid.uuid4())
+        try:
+            dispatch_ingest_task(
+                document_id=document_id,
+                version_id=version_id,
+                task_id=task_id,
+                file_path=str(saved_path),
+                celery_task_id=celery_task_id,
+            )
+        except Exception as exc:
+            db.rollback()
+            mark_dispatch_failed(
+                db,
+                task_id,
+                exc,
+                celery_task_id=celery_task_id,
+                message="文件已保留，但异步入库任务投递失败",
+            )
+            document = db.get(Document, document_id)
+            version = db.get(DocumentVersion, version_id)
+            if document is not None and document.current_version_id == version_id:
+                document.current_version_id = None
+            if version is not None:
+                version.version_status = "draft"
+            db.commit()
+            logger.exception("上传任务投递失败: task_id=%s", task_id)
+            raise
+        mark_dispatch_succeeded(db, task_id, celery_task_id)
         return UploadResult(
             document_id=document_id,
             version_id=version_id,
@@ -210,7 +240,7 @@ async def process_upload(
         raise
     except Exception as exc:  # noqa: BLE001 - 路由层需要统一错误处理
         db.rollback()
-        if saved_path is not None:
+        if saved_path is not None and not records_committed:
             service.delete_file(saved_path)
         logger.exception("上传流程失败: %s", exc)
         raise

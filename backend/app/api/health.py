@@ -27,7 +27,11 @@ import time
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from app.dependencies import check_qdrant_connection, check_redis_connection
+from app.dependencies import (
+    check_celery_worker_connection,
+    check_qdrant_connection,
+    check_redis_connection,
+)
 from app.db.session import check_database_connection
 
 router = APIRouter(tags=["health"])
@@ -45,6 +49,8 @@ class ComponentStatus(BaseModel):
 
     connected: bool
     latency_ms: float | None = None
+    worker_count: int | None = None
+    required_tasks_registered: bool | None = None
 
 
 class ReadyResponse(BaseModel):
@@ -72,11 +78,28 @@ def health_ready() -> ReadyResponse:
         "qdrant": check_qdrant_connection,
     }.items():
         start = time.perf_counter()
-        connected = check_fn()
+        try:
+            connected = check_fn()
+        except Exception:  # noqa: BLE001 - readiness 必须稳定返回降级状态
+            connected = False
         latency_ms = round((time.perf_counter() - start) * 1000, 2)
         components[name] = ComponentStatus(connected=connected, latency_ms=latency_ms)
 
-    overall = all(c.connected for c in components.values())
+    start = time.perf_counter()
+    try:
+        connected, worker_count, required_tasks_registered = check_celery_worker_connection()
+    except Exception:  # noqa: BLE001 - Worker 或 Broker 故障不能导致 500
+        connected = False
+        worker_count = None
+        required_tasks_registered = None
+    components["celery_worker"] = ComponentStatus(
+        connected=connected,
+        latency_ms=round((time.perf_counter() - start) * 1000, 2),
+        worker_count=worker_count,
+        required_tasks_registered=required_tasks_registered,
+    )
+
+    overall = all(c.connected for c in components.values()) and required_tasks_registered is True
     return ReadyResponse(
         status="ok" if overall else "degraded",
         components=components,

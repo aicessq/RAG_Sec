@@ -23,6 +23,7 @@ from app.models.ingest_task import IngestTask
 from app.services.chunk_service import build_chunk_records, generate_chunks
 from app.services.cleaner_service import clean_parsed_document
 from app.services.embedding_service import EmbeddingService, get_embedding_service
+from app.services.ingest_task_service import mark_dispatch_failed, mark_dispatch_succeeded
 from app.services.index_service import IndexService
 from app.services.keyword_store import KeywordStore
 from app.services.parser_service import parse_document
@@ -132,6 +133,7 @@ async def process_replace(
         version_id=new_version_id,
         task_type="replace",
         status="queued",
+        dispatch_status="pending",
         progress=0,
         message="Phase 9：新版本已接收，等待增量更新任务处理",
     )
@@ -139,22 +141,30 @@ async def process_replace(
     db.add(task)
     db.commit()
 
+    celery_task_id = str(uuid.uuid4())
     try:
         dispatch_update_task(
             document_id=target_document.id,
             version_id=new_version_id,
             task_id=task_id,
             file_path=str(file_path),
+            celery_task_id=celery_task_id,
         )
     except Exception as exc:
-        task.status = "failed"
-        task.error_message = str(exc)
-        task.message = "Phase 9：replace 任务投递失败"
-        task.finished_at = datetime.now(timezone.utc)
-        task.updated_at = datetime.now(timezone.utc)
-        new_version.version_status = "draft"
-        db.commit()
+        db.rollback()
+        mark_dispatch_failed(
+            db,
+            task_id,
+            exc,
+            celery_task_id=celery_task_id,
+            message="replace 源文件已保留，但异步任务投递失败",
+        )
+        new_version = db.get(DocumentVersion, new_version_id)
+        if new_version is not None:
+            new_version.version_status = "draft"
+            db.commit()
         raise
+    mark_dispatch_succeeded(db, task_id, celery_task_id)
     return ReplaceResult(
         document_id=target_document.id,
         version_id=new_version_id,
@@ -365,15 +375,25 @@ def soft_delete_document(
     )
 
 
-def dispatch_update_task(*, document_id: uuid.UUID, version_id: uuid.UUID, task_id: uuid.UUID, file_path: str) -> None:
-    """投递 replace 类型异步更新任务。"""
+def dispatch_update_task(
+    *,
+    document_id: uuid.UUID,
+    version_id: uuid.UUID,
+    task_id: uuid.UUID,
+    file_path: str,
+    celery_task_id: str,
+) -> None:
+    """使用预生成的消息 ID 投递 replace 类型异步更新任务。"""
     from app.workers.ingest_worker import replace_document_task
 
-    replace_document_task.delay(
-        document_id=str(document_id),
-        version_id=str(version_id),
-        task_id=str(task_id),
-        file_path=file_path,
+    replace_document_task.apply_async(
+        kwargs={
+            "document_id": str(document_id),
+            "version_id": str(version_id),
+            "task_id": str(task_id),
+            "file_path": file_path,
+        },
+        task_id=celery_task_id,
     )
 
 
