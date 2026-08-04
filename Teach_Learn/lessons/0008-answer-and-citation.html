@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>第 8 课：答案生成与引用校验</title>
+  <link rel="stylesheet" href="../assets/lesson.css" />
+</head>
+<body>
+<main>
+<article>
+  <p class="small">Teach_Learn · Lesson 0008 · <a href="0007-hybrid-retrieval.html">上一课</a> · <a href="0009-replace-and-soft-delete.html">下一课</a></p>
+  <h1>答案生成与引用校验</h1>
+  <p>本课目标：你能解释“证据如何变成带 citation 的回答”，以及 citation_checker 的作用。</p>
+
+  <div class="callout">
+    <strong>Tangible win：</strong>能用一句话说明“answer_generator 生成答案，citation_checker 校验引用是否被证据支持”。
+  </div>
+
+  <h2>1. 答案生成流水线</h2>
+  <pre>evidence top 5
+  → parent context 回取
+  → answer_generator（LLM）
+  → citation_checker（校验）
+  → query_log 持久化
+  → 返回 answer + citations</pre>
+
+  <h2>2. 为什么需要 citation_checker？</h2>
+  <ul>
+    <li>答案可能编造法规条款、标准编号、页码。</li>
+    <li>checker 检查关键结论是否被检索证据支持。</li>
+    <li>不支持的 claim 会被修正或标记。</li>
+  </ul>
+
+  <h2>3. 引用最小粒度</h2>
+  <ul>
+    <li>必须返回：chunk_id、doc_title、page_start、page_end</li>
+    <li>若有 chapter / section / article_no，则必须返回</li>
+    <li>不允许伪造条款号或章节号</li>
+  </ul>
+
+  <h2>4. 练习</h2>
+  <div class="quiz">
+    <ol>
+      <li>如果 answer_generator 生成了“第 21 条”，但证据里没有，会发生什么？</li>
+      <li>为什么 parent context 要回取？</li>
+      <li>你看到一个 citation 的 page_start 是 null，这是什么情况？</li>
+    </ol>
+    <details>
+      <summary>展开参考答案</summary>
+      <ol>
+        <li>citation_checker 会标记 unsupported_claims，并修正答案。</li>
+        <li>child 太短，parent 提供更完整上下文，减少幻觉。</li>
+        <li>证据没有页码信息；可能是教材或 Markdown 文档。</li>
+      </ol>
+    </details>
+  </div>
+
+  <h2>5. 本课参考</h2>
+  <ul>
+    <li><a href="../reference/four-flows.html">四条主流程图 · 查询</a></li>
+    <li><code>backend/app/services/answer_generator.py</code></li>
+    <li><code>backend/app/services/citation_checker.py</code></li>
+  </ul>
+
+  <div class="callout">
+    下一课聚焦<a href="0009-replace-and-soft-delete.html">替换、增量更新与软删除</a>——这是“知识库如何演进”的关键。
+  </div>
+</article>
+</main>
+</body>
+</html>

@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>架构与技术选型课程｜CyberSec RAG Agent</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --brand: #2563eb;
+      --brand-soft: #dbeafe;
+      --ok: #166534;
+      --warn: #92400e;
+      --danger: #991b1b;
+      --teal: #0f766e;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    .container {
+      width: min(1160px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 48px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 42%, #0f766e 100%);
+      color: #fff;
+      border-radius: 24px;
+      padding: 40px 32px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      margin: 0 0 12px;
+      font-size: 34px;
+      line-height: 1.25;
+    }
+
+    .hero p {
+      margin: 8px 0;
+      color: rgba(255,255,255,0.92);
+      max-width: 920px;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.14);
+      color: #fff;
+      font-size: 14px;
+      border: 1px solid rgba(255,255,255,0.18);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .toc, .panel {
+      background: var(--panel);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--line);
+    }
+
+    .toc {
+      position: sticky;
+      top: 20px;
+      padding: 20px;
+    }
+
+    .toc h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .toc a {
+      display: block;
+      color: var(--text);
+      text-decoration: none;
+      padding: 8px 10px;
+      border-radius: 10px;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .toc a:hover {
+      background: #f3f4f6;
+      color: var(--brand);
+    }
+
+    .content {
+      display: grid;
+      gap: 20px;
+    }
+
+    .panel {
+      padding: 24px;
+    }
+
+    .panel h2 {
+      margin-top: 0;
+      font-size: 24px;
+      color: #111827;
+    }
+
+    .panel h3 {
+      margin-top: 24px;
+      margin-bottom: 10px;
+      font-size: 18px;
+      color: #111827;
+    }
+
+    .panel h4 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      color: #111827;
+    }
+
+    .lead {
+      color: var(--muted);
+      margin-top: -4px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      background: #fff;
+    }
+
+    .card.soft {
+      background: #f8fafc;
+    }
+
+    .callout {
+      border-left: 5px solid var(--brand);
+      background: var(--brand-soft);
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin: 16px 0;
+    }
+
+    .callout.ok {
+      border-left-color: #16a34a;
+      background: #dcfce7;
+    }
+
+    .callout.warn {
+      border-left-color: #d97706;
+      background: #fef3c7;
+    }
+
+    .callout.teal {
+      border-left-color: var(--teal);
+      background: #ccfbf1;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      overflow: hidden;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+    }
+
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f9fafb;
+      font-size: 14px;
+      color: #374151;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    code, pre {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+    }
+
+    code {
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 0.92em;
+    }
+
+    pre {
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 16px;
+      border-radius: 14px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    pre code {
+      background: transparent;
+      padding: 0;
+      color: inherit;
+    }
+
+    ul, ol {
+      padding-left: 20px;
+    }
+
+    .qa {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      margin-top: 14px;
+      background: #fcfcfd;
+    }
+
+    .qa .q {
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #111827;
+    }
+
+    .qa .a {
+      color: #374151;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 6px;
+      margin-bottom: 6px;
+    }
+
+    .tag.api { background: #dbeafe; color: #1d4ed8; }
+    .tag.data { background: #dcfce7; color: #166534; }
+    .tag.async { background: #fef3c7; color: #92400e; }
+    .tag.vec { background: #ede9fe; color: #5b21b6; }
+    .tag.ai { background: #fce7f3; color: #9d174d; }
+    .tag.ops { background: #e0f2fe; color: #075985; }
+
+    .flow-box {
+      background: #0f172a;
+      color: #e5e7eb;
+      border-radius: 16px;
+      padding: 18px 20px;
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .why-list li {
+      margin-bottom: 8px;
+    }
+
+    .footer-note {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .compare .yes, .compare .no {
+      border-radius: 14px;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+    }
+
+    .compare .yes {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+
+    .compare .no {
+      background: #fef2f2;
+      border-color: #fecaca;
+    }
+
+    @media (max-width: 960px) {
+      .layout { grid-template-columns: 1fr; }
+      .toc { position: static; }
+      .grid-2, .grid-3, .compare { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>架构与技术选型课程</h1>
+      <p>
+        本课程把「这个项目怎么搭」和「为什么选这些技术」合在一起讲。
+        目标不是背名词，而是能从业务边界、分层职责、数据流和工程约束出发，
+        把 CyberSec RAG Agent 讲成一个可维护、可评测、可演进的系统。
+      </p>
+      <div class="badge-row">
+        <span class="badge">课程类型：架构 + 技术选型</span>
+        <span class="badge">当前实现：Phase 10</span>
+        <span class="badge">关键词：分层 / Hybrid RAG / Async / Eval</span>
+        <span class="badge">来源：当前仓库真实实现</span>
+      </div>
+    </section>
+
+    <div class="layout">
+      <nav class="toc">
+        <h2>目录</h2>
+        <a href="#s1">1. 先建立全局图景</a>
+        <a href="#s2">2. 仓库与运行时分层</a>
+        <a href="#s3">3. 四大业务主链路</a>
+        <a href="#s4">4. 数据与索引架构</a>
+        <a href="#s5">5. 技术栈全景</a>
+        <a href="#s6">6. 为什么这样选</a>
+        <a href="#s7">7. 关键架构决策</a>
+        <a href="#s8">8. 技术协作关系</a>
+        <a href="#s9">9. 面试怎么讲</a>
+        <a href="#s10">10. 自测题</a>
+      </nav>
+
+      <div class="content">
+        <!-- 1 -->
+        <section class="panel" id="s1">
+          <h2>1. 先建立全局图景</h2>
+          <p class="lead">先回答“这是什么系统”，再谈技术栈才有意义。</p>
+
+          <div class="callout">
+            <strong>一句话定位：</strong>
+            这是一个面向网络安全法规、标准、教材与知识资料的 <strong>RAG 后端系统</strong>。
+            它能上传与版本化文档、解析切分并建立索引、混合检索后给出带引用的回答，
+            还支持增量更新、软删除，以及基于 golden dataset 的量化评测。
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <h4>它不是什么</h4>
+              <ul>
+                <li>不是开放域自由聊天机器人</li>
+                <li>不是“只写 prompt 的 demo”</li>
+                <li>不是把所有文本丢进向量库就结束</li>
+                <li>不是同步阻塞式单进程脚本</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h4>它必须具备什么</h4>
+              <ul>
+                <li>明确知识边界：只答库内资料能支撑的内容</li>
+                <li>安全边界：查询前先做 <code>safety_guard</code></li>
+                <li>证据约束：回答要能对上 citation</li>
+                <li>工程维护：replace / soft delete / eval</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3>为什么这个定位会决定架构</h3>
+          <p>
+            安全领域资料往往是 PDF/标准文本，条款编号、页码、版本都很重要。
+            因此系统必须同时管理：
+          </p>
+          <ol>
+            <li><strong>文档生命周期</strong>：上传、版本、替换、软删除</li>
+            <li><strong>检索资产</strong>：child chunk 向量 + FTS + parent context</li>
+            <li><strong>查询治理</strong>：安全过滤、意图、改写、引用校验</li>
+            <li><strong>效果度量</strong>：Recall@K / MRR / citation accuracy 等</li>
+          </ol>
+          <p>
+            这四件事决定了：不能只选一个 LLM API，而要选一套“API + 关系库 + 向量库 + 异步任务 + 评测”的组合。
+          </p>
+        </section>
+
+        <!-- 2 -->
+        <section class="panel" id="s2">
+          <h2>2. 仓库与运行时分层</h2>
+          <p class="lead">先看目录，再看请求如何穿过这些目录。</p>
+
+          <h3>2.1 仓库形状</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>路径</th>
+                <th>职责</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>backend/app/</code></td>
+                <td>后端应用核心：API、services、models、workers、prompts</td>
+              </tr>
+              <tr>
+                <td><code>backend/alembic/</code></td>
+                <td>数据库 schema 迁移</td>
+              </tr>
+              <tr>
+                <td><code>backend/tests/</code></td>
+                <td>默认单测 + integration 基础设施测试</td>
+              </tr>
+              <tr>
+                <td><code>frontend/</code></td>
+                <td>React + TypeScript + Vite 的 MVP 前端</td>
+              </tr>
+              <tr>
+                <td><code>eval/</code></td>
+                <td>golden dataset 与评测数据源</td>
+              </tr>
+              <tr>
+                <td><code>Doc/</code></td>
+                <td>规格、架构、学习型 HTML 与阶段文档</td>
+              </tr>
+              <tr>
+                <td><code>docker-compose.yml</code></td>
+                <td>PostgreSQL / Redis / Qdrant / backend / worker 编排</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>2.2 运行时五层</h3>
+          <div class="flow-box">HTTP 请求
+  → main.py（应用入口 / CORS / 日志 / 路由挂载）
+    → api/*（薄路由：参数、状态码、异常映射）
+      → services/*（真正业务：解析、检索、回答、更新、评测）
+        → models + db + Alembic（持久化与 schema）
+        → workers/* + Celery（异步 ingest / replace）
+          → PostgreSQL / Redis / Qdrant / 本地模型</div>
+
+          <div class="callout ok">
+            <strong>核心工程原则：</strong>
+            API 层只接请求，真正的流水线逻辑沉到 services / workers。
+            这样路由保持薄，业务可测，worker 也能复用同一套 service 能力。
+          </div>
+
+          <h3>2.3 各层该做什么 / 不该做什么</h3>
+          <div class="grid-2">
+            <div class="card">
+              <h4>该做</h4>
+              <ul>
+                <li><code>api/</code>：路径定义、依赖注入、HTTP 错误映射</li>
+                <li><code>services/</code>：pipeline 编排与领域规则</li>
+                <li><code>models/</code>：关系建模、约束、默认值</li>
+                <li><code>workers/</code>：长任务编排，调用 services</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h4>不该做</h4>
+              <ul>
+                <li>在路由里写完整 ingest / retrieve 流水线</li>
+                <li>让 worker 绕过 service 直接散落业务细节</li>
+                <li>把 parent/child 规则散写到多个入口</li>
+                <li>让前端假设后端没有版本与可见性语义</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3 -->
+        <section class="panel" id="s3">
+          <h2>3. 四大业务主链路</h2>
+          <p class="lead">架构不是静态模块列表，而是四条真实会跑起来的数据流。</p>
+
+          <h3>3.1 Upload / Ingest</h3>
+          <div class="flow-box">upload
+  → 校验扩展名 / MIME / 大小
+  → 计算 file_hash，落盘原始文件
+  → 创建 document / document_version / ingest_task
+  → Celery enqueue
+  → parse → clean → parent/child chunk
+  → chunks 写入 PostgreSQL
+  → 仅 child chunk 进入 embedding / Qdrant / FTS
+  → 任务完成</div>
+          <p>
+            同步接口只做“接住文件 + 建记录 + 派任务”；
+            解析、切分、embedding 这些重活在 worker 中完成，避免 HTTP 超时。
+          </p>
+
+          <h3>3.2 Query / Answer</h3>
+          <div class="flow-box">user query
+  → safety_guard
+  → intent_classifier
+  → term_expander
+  → query_rewriter
+  → metadata_filter
+  → vector search (Qdrant) + keyword search (PostgreSQL FTS)
+  → RRF fusion → rerank
+  → parent-context 回填
+  → answer_generator
+  → citation_checker
+  → 返回回答 + 写 query_log</div>
+          <div class="callout">
+            查询链路把 <strong>安全过滤放在最前面</strong>，把 <strong>证据校验放在生成之后</strong>。
+            这是领域约束，不是可选装饰。
+          </div>
+
+          <h3>3.3 Replace / Soft Delete</h3>
+          <div class="grid-2">
+            <div class="card">
+              <h4>Replace（增量更新）</h4>
+              <ol>
+                <li>上传新文件并与当前 <code>file_hash</code> 比较</li>
+                <li>创建新 <code>document_version</code> + <code>ingest_task</code></li>
+                <li>重新 parse / clean / chunk</li>
+                <li>按 <code>chunk_hash</code> diff child chunks</li>
+                <li>新增的做 embedding；未变的复用向量</li>
+                <li>移除的在 PG / Qdrant / FTS 中失活</li>
+                <li>切换 <code>current_version_id</code></li>
+              </ol>
+            </div>
+            <div class="card">
+              <h4>Soft Delete</h4>
+              <ul>
+                <li>不是直接物理删主表完事</li>
+                <li>同步关闭 document / chunk 可见性</li>
+                <li>同步关闭 Qdrant payload <code>is_active</code></li>
+                <li>同步关闭 FTS 可见性</li>
+              </ul>
+              <p>
+                目标：默认检索范围再也看不到已删除内容，
+                且三处索引状态保持一致。
+              </p>
+            </div>
+          </div>
+
+          <h3>3.4 Eval</h3>
+          <div class="flow-box">eval/golden_dataset.jsonl
+  → materialize eval_datasets / eval_dataset_items
+  → 对每条样本跑真实 safety / rewrite / retrieve / answer
+  → 计算 Recall@K / MRR / citation accuracy / refusal accuracy / latency
+  → 落库 eval_runs / eval_run_items</div>
+          <p>
+            评测复用真实查询流水线，而不是另写一套 mock 路径。
+            这样评测结果更能反映线上行为。
+          </p>
+        </section>
+
+        <!-- 4 -->
+        <section class="panel" id="s4">
+          <h2>4. 数据与索引架构</h2>
+          <p class="lead">PostgreSQL 是真相源；Qdrant 是语义检索加速层；Redis 是任务协作层。</p>
+
+          <h3>4.1 核心实体</h3>
+          <div class="grid-3">
+            <div class="card soft">
+              <h4>文档生命周期</h4>
+              <p><code>documents</code></p>
+              <p><code>document_versions</code></p>
+              <p><code>ingest_tasks</code></p>
+            </div>
+            <div class="card soft">
+              <h4>检索资产</h4>
+              <p><code>chunks</code>（parent / child）</p>
+              <p><code>search_tsv</code></p>
+              <p>Qdrant child vectors</p>
+            </div>
+            <div class="card soft">
+              <h4>观测与评测</h4>
+              <p><code>query_logs</code> / <code>feedback</code></p>
+              <p><code>eval_datasets</code> / items</p>
+              <p><code>eval_runs</code> / items</p>
+            </div>
+          </div>
+
+          <h3>4.2 Parent / Child 设计</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>类型</th>
+                <th>存哪里</th>
+                <th>干什么</th>
+                <th>不干什么</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Child chunk</td>
+                <td>PostgreSQL + Qdrant + FTS</td>
+                <td>精确命中、向量检索、关键词检索、diff 单元</td>
+                <td>不直接作为完整回答上下文</td>
+              </tr>
+              <tr>
+                <td>Parent chunk</td>
+                <td>主要在 PostgreSQL</td>
+                <td>命中后回填更完整上下文</td>
+                <td>默认不进入向量 / 关键词检索面</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout teal">
+            <strong>为什么这样拆：</strong>
+            child 更适合检索粒度，parent 更适合生成时的上下文完整性。
+            同时 <code>chunk_hash</code> 让 replace 可以做增量 diff，而不是整库重嵌。
+          </div>
+
+          <h3>4.3 三处可见性必须对齐</h3>
+          <p>
+            软删除和版本切换时，下列三者要同时正确：
+          </p>
+          <ol>
+            <li>PostgreSQL 中 document / chunk 的 active 状态</li>
+            <li>PostgreSQL FTS 可检索范围</li>
+            <li>Qdrant payload / 过滤条件中的 active 状态</li>
+          </ol>
+          <p>
+            任何一处漏掉，都会出现“库里说删了，检索还能搜到”的一致性 bug。
+          </p>
+        </section>
+
+        <!-- 5 -->
+        <section class="panel" id="s5">
+          <h2>5. 技术栈全景</h2>
+          <p class="lead">按职责分组，而不是按流行度罗列。</p>
+
+          <div class="grid-2">
+            <div class="card">
+              <span class="tag api">API</span>
+              <h4>Python 3.11+ / FastAPI / Pydantic v2</h4>
+              <p>后端语言、HTTP 入口、请求响应契约、配置建模、Swagger 文档。</p>
+            </div>
+            <div class="card">
+              <span class="tag data">Data</span>
+              <h4>SQLAlchemy 2.x / Alembic / PostgreSQL</h4>
+              <p>关系建模、schema 迁移、业务真相源，并承担 FTS 关键词检索。</p>
+            </div>
+            <div class="card">
+              <span class="tag async">Async</span>
+              <h4>Redis / Celery</h4>
+              <p>任务队列、结果后端、ingest / replace / reindex 异步执行。</p>
+            </div>
+            <div class="card">
+              <span class="tag vec">Vector</span>
+              <h4>Qdrant</h4>
+              <p>child chunk 向量存储与语义检索，支持 metadata payload 过滤。</p>
+            </div>
+            <div class="card">
+              <span class="tag ai">AI</span>
+              <h4>PyMuPDF / sentence-transformers / torch / LLM</h4>
+              <p>PDF 解析、本地 embedding / reranker、回答生成与引用检查。</p>
+            </div>
+            <div class="card">
+              <span class="tag ops">Ops / QA</span>
+              <h4>Docker Compose / pytest / TestClient / httpx</h4>
+              <p>多服务编排、分层测试、接口契约与真实基础设施验证。</p>
+            </div>
+          </div>
+
+          <h3>前端补充</h3>
+          <p>
+            <code>frontend/</code> 使用 <strong>React + TypeScript + Vite</strong> 驱动现有 FastAPI 接口，
+            形成可演示的上传、查询、文档管理与评测入口。前端不是本项目最重的架构重心，
+            但说明系统已经具备“可被 UI 消费的稳定 API 面”。
+          </p>
+        </section>
+
+        <!-- 6 -->
+        <section class="panel" id="s6">
+          <h2>6. 为什么这样选：逐项选型逻辑</h2>
+          <p class="lead">每一项都对应一个真实约束，而不是“因为大家都在用”。</p>
+
+          <h3>6.1 Python 3.11+</h3>
+          <div class="compare">
+            <div class="yes">
+              <strong>为什么选</strong>
+              <ul class="why-list">
+                <li>FastAPI / Pydantic / SQLAlchemy / Celery / AI 生态成熟</li>
+                <li>适合快速把 RAG 流水线工程化</li>
+                <li>类型注解与现代语法对中大型后端可读性更好</li>
+              </ul>
+            </div>
+            <div class="no">
+              <strong>如果换别的</strong>
+              <ul class="why-list">
+                <li>Node 也行做 API，但本地 embedding / 文档 NLP 生态更偏 Python</li>
+                <li>Go/Java 更强并发与强类型，但 AI 原型与模型库摩擦更大</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3>6.2 FastAPI + Pydantic v2</h3>
+          <ul class="why-list">
+            <li><strong>开发效率：</strong>路由、校验、OpenAPI 文档一次成型</li>
+            <li><strong>契约清晰：</strong>upload / query / answer / eval 的输入输出靠 schema 约束</li>
+            <li><strong>分层友好：</strong>天然鼓励“薄 API + 厚 service”</li>
+            <li><strong>适合演进：</strong>分 phase 加接口时，文档和校验同步跟上</li>
+          </ul>
+          <div class="callout">
+            FastAPI 在这里是<strong>API 外壳</strong>，不是业务大脑。
+            面试时要强调：核心价值在 services 流水线，而不是框架本身。
+          </div>
+
+          <h3>6.3 PostgreSQL + SQLAlchemy + Alembic</h3>
+          <div class="grid-2">
+            <div class="card">
+              <h4>PostgreSQL 承担双职责</h4>
+              <ol>
+                <li>业务真相源：文档、版本、chunk、任务、日志、评测</li>
+                <li>Hybrid retrieval 的 keyword 底座：FTS</li>
+              </ol>
+              <p>
+                UUID、JSONB、GIN 索引都很适合“结构化元数据 + 半结构化内容”的 RAG 资产。
+              </p>
+            </div>
+            <div class="card">
+              <h4>为什么不是“只用向量库”</h4>
+              <ul>
+                <li>版本切换、软删除、任务状态需要事务与约束</li>
+                <li>条款号、页码、active 标记需要关系建模</li>
+                <li>评测 run 需要可查询、可对比的历史记录</li>
+                <li>FTS 能补语义检索在专有名词 / 编号上的短板</li>
+              </ul>
+            </div>
+          </div>
+          <p>
+            SQLAlchemy 负责复杂对象关系；Alembic 负责多阶段 schema 演进。
+            对一个持续加表（query_logs、eval_runs…）的项目，迁移工具不是可选项。
+          </p>
+
+          <h3>6.4 Redis + Celery</h3>
+          <p>Ingest / replace 链路天然重：</p>
+          <ul>
+            <li>PDF 解析耗时</li>
+            <li>chunk 与 embedding 计算重</li>
+            <li>索引写入不是瞬时操作</li>
+          </ul>
+          <p>
+            所以上传接口只创建任务，worker 异步执行。
+            Redis 作为 broker / result backend，Celery 负责独立进程消费。
+            这是“同步 API 稳定性”和“重处理吞吐”之间的标准拆分。
+          </p>
+
+          <h3>6.5 Qdrant</h3>
+          <div class="grid-2">
+            <div class="card">
+              <h4>选它的原因</h4>
+              <ul>
+                <li>向量检索职责清晰，部署相对轻量</li>
+                <li>payload 适合带 metadata filter</li>
+                <li>很适合中小型 RAG 快速落地</li>
+                <li>与 PostgreSQL 分工明确：语义检索 vs 业务真相</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h4>刻意不做的事</h4>
+              <ul>
+                <li>不把 parent chunk 全塞进向量库</li>
+                <li>不把业务主数据只放在 Qdrant</li>
+                <li>不让向量库单独决定“文档是否存在”</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3>6.6 PyMuPDF</h3>
+          <p>
+            法规、标准、教材大量是 PDF。没有可靠逐页解析，就没有稳定页码引用，
+            也没有可清洗、可切分的文本来源。PyMuPDF 在速度与工程可用性上足够支撑 ingest。
+          </p>
+
+          <h3>6.7 sentence-transformers + torch + 本地模型</h3>
+          <ul class="why-list">
+            <li><strong>可控：</strong>embedding / reranker 可本地运行，便于开发和离线验证</li>
+            <li><strong>可替换：</strong>封装在 service 层，模型实现可换而不改 API</li>
+            <li><strong>服务检索质量：</strong>torch 在这里主要用于推理，不是训练平台</li>
+          </ul>
+          <div class="callout warn">
+            仓库里的 fallback / 占位权重可以验证编排是否正确，
+            <strong>但不等于真实模型质量已经达标</strong>。讲选型时要区分“链路可用”和“效果已验证”。
+          </div>
+
+          <h3>6.8 Docker Compose + pytest</h3>
+          <div class="grid-2">
+            <div class="card">
+              <h4>Docker Compose</h4>
+              <p>
+                本系统依赖 PostgreSQL、Redis、Qdrant、backend、worker 多组件协作。
+                Compose 解决的是“把整套依赖稳定拉起来”，而不是单纯容器炫技。
+              </p>
+            </div>
+            <div class="card">
+              <h4>pytest 分层</h4>
+              <p>
+                默认快速测试不依赖真实基础设施；
+                <code>integration</code> 标记专门打真实 PG / Redis / Qdrant。
+                这让日常开发和严格门禁可以分开。
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7 -->
+        <section class="panel" id="s7">
+          <h2>7. 关键架构决策（比技术名词更重要）</h2>
+          <p class="lead">面试官往往更关心“你做了哪些取舍”。</p>
+
+          <div class="grid-2">
+            <div class="card">
+              <h4>1. 薄 API，厚 Service</h4>
+              <p>
+                路由只做协议适配；流水线、diff、fusion、citation 都在 service。
+                好处：可测、可复用、worker 与 API 共享逻辑。
+              </p>
+            </div>
+            <div class="card">
+              <h4>2. Upload ≠ Replace</h4>
+              <p>
+                上传创建新 document；替换创建新 version。
+                文档身份与版本历史被严格分开，避免“覆盖上传”语义混乱。
+              </p>
+            </div>
+            <div class="card">
+              <h4>3. 只索引 Child Chunk</h4>
+              <p>
+                向量和 FTS 面向 child；parent 用于上下文重建。
+                检索粒度更细，生成上下文更完整，增量 diff 也更自然。
+              </p>
+            </div>
+            <div class="card">
+              <h4>4. Hybrid Retrieval</h4>
+              <p>
+                向量负责语义相近；FTS 负责编号、专名、字面匹配。
+                再经 RRF / rerank 融合，比单路检索更稳。
+              </p>
+            </div>
+            <div class="card">
+              <h4>5. Safety 在生成之前</h4>
+              <p>
+                安全过滤是 query 第一阶段，不是回答后处理。
+                对网络安全知识库，这是产品边界，不是附加功能。
+              </p>
+            </div>
+            <div class="card">
+              <h4>6. 增量更新优于全量重嵌</h4>
+              <p>
+                用 <code>file_hash</code> 与 <code>chunk_hash</code> 识别变化，
+                未变 child 复用向量，降低 replace 成本与抖动。
+              </p>
+            </div>
+            <div class="card">
+              <h4>7. 三存储可见性对齐</h4>
+              <p>
+                PostgreSQL / FTS / Qdrant 的 active 状态必须一致。
+                软删除和版本切换都围绕这个不变式设计。
+              </p>
+            </div>
+            <div class="card">
+              <h4>8. Eval 走真链路</h4>
+              <p>
+                评测调用真实 safety / retrieve / answer，
+                指标可落库比较，避免“离线脚本很美、线上行为另一套”。
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 8 -->
+        <section class="panel" id="s8">
+          <h2>8. 技术如何协作：一张总图</h2>
+          <div class="flow-box">用户 / 前端 (React + TS + Vite)
+        │
+        ▼
+FastAPI + Pydantic          ← HTTP API 与契约
+        │
+        ├─ 同步查询 / 管理接口 ──► services/*
+        │                           ├─ safety / rewrite / retrieve / answer
+        │                           ├─ update / soft delete / eval
+        │                           └─ embedding / rerank / LLM
+        │
+        └─ 上传 / 替换接口 ──► 创建 DB 记录
+                                └─ Celery task (Redis)
+                                     └─ worker
+                                          ├─ PyMuPDF parse
+                                          ├─ clean / chunk
+                                          ├─ PostgreSQL 写 chunks / FTS
+                                          └─ Qdrant 写 child vectors
+
+持久化分工：
+  PostgreSQL = 真相源 + FTS
+  Qdrant     = 语义检索
+  Redis      = 任务协作
+  本地模型    = embedding / rerank /（可选）生成</div>
+
+          <h3>用一句话串起来</h3>
+          <div class="callout ok">
+            用 FastAPI 暴露能力，用 PostgreSQL 管业务与关键词检索，用 Qdrant 做语义检索，
+            用 Redis + Celery 消化重处理，用本地 embedding/reranker 提升检索质量，
+            再用 pytest 与 Docker Compose 保证系统可验证、可运行。
+          </div>
+        </section>
+
+        <!-- 9 -->
+        <section class="panel" id="s9">
+          <h2>9. 面试怎么讲（可直接口述）</h2>
+
+          <div class="qa">
+            <div class="q">Q1：请用 30 秒介绍这个项目的架构。</div>
+            <div class="a">
+              这是一个安全领域的 RAG 后端。入口是 FastAPI，业务在 services 层。
+              文档经 Celery 异步解析切分后，child chunk 进入 PostgreSQL FTS 和 Qdrant；
+              查询先过 safety，再做改写与混合检索，回填 parent context 后生成带引用回答。
+              另外支持基于 chunk diff 的增量替换、软删除，以及走真实链路的评测。
+            </div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q2：为什么同时用 PostgreSQL 和 Qdrant？</div>
+            <div class="a">
+              职责不同。PostgreSQL 是文档、版本、任务、日志、评测的真相源，并提供 FTS；
+              Qdrant 专门做 child chunk 的向量检索。这样关系约束、事务和语义召回不会混在一个存储里。
+            </div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q3：为什么引入 Celery，而不是上传接口里直接处理完？</div>
+            <div class="a">
+              解析、切分、embedding、写索引都是长耗时操作。同步做会拉高延迟、放大超时风险。
+              上传接口只负责校验、落盘、建记录和入队；worker 异步执行，系统更稳。
+            </div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q4：为什么是 hybrid retrieval，而不是纯向量？</div>
+            <div class="a">
+              安全资料里有大量法规编号、条款号、专有名词。纯语义容易漏字面关键命中；
+              纯关键词又缺语义泛化。所以用 Qdrant + PostgreSQL FTS，再 RRF/rerank 融合。
+            </div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q5：你认为最关键的架构约束是什么？</div>
+            <div class="a">
+              有三条：第一，API 薄、业务在 service；第二，只索引 child、parent 做上下文；
+              第三，PostgreSQL / FTS / Qdrant 的可见性必须一致。这三条决定了系统能不能长期维护。
+            </div>
+          </div>
+
+          <div class="qa">
+            <div class="q">Q6：技术选型时你如何避免“为了 AI 而 AI”？</div>
+            <div class="a">
+              先固定业务不变式：要版本、要引用、要安全拒绝、要可评测。
+              然后再选能支撑这些不变式的组件。模型只是流水线中的一环，
+              存储一致性、异步边界和评测闭环同样关键。
+            </div>
+          </div>
+        </section>
+
+        <!-- 10 -->
+        <section class="panel" id="s10">
+          <h2>10. 学完自测</h2>
+          <p class="lead">不看文档，能否独立回答下面问题。</p>
+
+          <ol>
+            <li>画出从 <code>upload</code> 到 child chunk 入 Qdrant 的完整路径，标出同步与异步边界。</li>
+            <li>说明 <code>documents</code> 与 <code>document_versions</code> 为什么要拆开。</li>
+            <li>解释为什么 parent chunk 默认不进入向量检索。</li>
+            <li>软删除时，如果只改 PostgreSQL 不改 Qdrant，会出现什么现象？</li>
+            <li>用自己的话说明：FastAPI、PostgreSQL、Qdrant、Celery 各自不可替代的理由。</li>
+            <li>评测为什么必须复用真实 query pipeline？</li>
+          </ol>
+
+          <div class="callout">
+            <strong>建议掌握标准：</strong>
+            你能不看代码，把分层、四条主链路、存储分工和 6～8 条选型理由讲顺，
+            就算真正理解了本项目的架构与技术选型。
+          </div>
+
+          <p class="footer-note">
+            关联阅读：
+            <code>Doc/项目架构文档.md</code>、
+            <code>Doc/项目技术栈文档.md</code>、
+            <code>Doc/项目技术面试说明.html</code>、
+            <code>Doc/文档2.MD</code>（可执行规格与阶段边界）。
+            本文描述的是当前仓库已实现到 Phase 10 的真实架构，而非早期骨架设想。
+          </p>
+        </section>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

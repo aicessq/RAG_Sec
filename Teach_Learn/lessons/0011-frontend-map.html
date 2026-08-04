@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>第 11 课：前端 MVP 如何对接后端</title>
+  <link rel="stylesheet" href="../assets/lesson.css" />
+</head>
+<body>
+<main>
+<article>
+  <p class="small">Teach_Learn · Lesson 0011 · <a href="0010-eval-system.html">上一课</a> · <a href="0012-debug-from-symptom.html">下一课</a></p>
+  <h1>前端 MVP 如何对接后端</h1>
+  <p>本课目标：你能把 <code>frontend/</code> 里的页面和后端 API 一一对应起来，并知道改 UI 时该先动哪边。</p>
+
+  <div class="callout">
+    <strong>Tangible win：</strong>能说出 Dashboard / Upload / Retrieve / Rewrite / Answer / Eval 各自调用的接口前缀。
+  </div>
+
+  <h2>1. 前端是什么</h2>
+  <ul>
+    <li>独立 React + TypeScript + Vite MVP，不是规格第一版必做项，但是仓库里已有的演示层。</li>
+    <li>通过 <code>VITE_API_BASE_URL</code>（默认 <code>http://localhost:8000</code>）调用 FastAPI。</li>
+    <li>脚本只有 <code>dev</code> / <code>build</code> / <code>preview</code>，没有单独的前端测试或 lint 脚本。</li>
+  </ul>
+
+  <h2>2. 页面 ↔ API 对照</h2>
+  <div class="grid">
+    <section class="card"><h3>Upload</h3><p><code>POST /api/v1/documents/upload</code>，再轮询任务状态。</p></section>
+    <section class="card"><h3>Retrieve</h3><p><code>POST /api/v1/query/retrieve</code>，调试混合检索结果。</p></section>
+    <section class="card"><h3>Rewrite</h3><p><code>POST /api/v1/query/rewrite</code>，看 intent / 改写 / filter。</p></section>
+    <section class="card"><h3>Answer</h3><p><code>POST /api/v1/query/answer</code>，完整问答链路。</p></section>
+    <section class="card"><h3>Eval</h3><p><code>POST /api/v1/eval/run</code>，跑 golden dataset。</p></section>
+    <section class="card"><h3>Dashboard</h3><p>聚合入口与状态概览，不承载核心业务逻辑。</p></section>
+  </div>
+
+  <h2>3. 读前端的方法</h2>
+  <pre>frontend/
+  → 路由/页面组件（用户动作入口）
+  → API client / fetch 封装（看 base URL 与路径）
+  → 对照 backend/app/api/*.py 与 schemas
+  → 业务对错仍以 backend services 为准</pre>
+  <p>前端不实现 RAG 逻辑；它只是驱动已有 API。修“答错了 / 检索差”应回到 backend，而不是在 React 里补业务。</p>
+
+  <h2>4. 练习</h2>
+  <div class="quiz">
+    <ol>
+      <li>Answer 页超时，你先查前端还是 <code>query_service</code> / worker？</li>
+      <li>想在 UI 显示 rewritten_query，但 API 响应没有该字段，该改哪三处？</li>
+      <li><code>npm run build</code> 实际做了哪两步？</li>
+    </ol>
+    <details>
+      <summary>展开参考答案</summary>
+      <ol>
+        <li>先确认网络与 API 是否通；业务超时/逻辑问题看 backend 的 answer 链路，不在前端“发明”答案。</li>
+        <li>backend schema + <code>api/query.py</code> 出参（数据来自 service）+ 前端展示字段。</li>
+        <li><code>tsc -b</code> 类型检查，再 <code>vite build</code> 打包。</li>
+      </ol>
+    </details>
+  </div>
+
+  <h2>5. 本课参考</h2>
+  <ul>
+    <li><a href="../../frontend/README.md">frontend/README.md</a></li>
+    <li><a href="../reference/four-flows.html">四条主流程图</a></li>
+    <li><a href="0003-backend-layering.html">第 3 课：后端分层</a></li>
+  </ul>
+
+  <div class="callout">
+    下一课是收官：<a href="0012-debug-from-symptom.html">从症状定位文件</a>——把前面地图与四条链路变成可执行的排查方法。
+  </div>
+</article>
+</main>
+</body>
+</html>

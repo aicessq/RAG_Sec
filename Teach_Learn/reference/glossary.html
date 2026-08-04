@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RAG_Sec 术语表</title>
+  <link rel="stylesheet" href="../assets/lesson.css" />
+</head>
+<body>
+<main>
+<article>
+  <p class="small">Teach_Learn · Reference</p>
+  <h1>RAG_Sec 术语表</h1>
+  <p>统一中文/英文术语。所有课程尽量使用这里的定义，避免混用别名。</p>
+
+  <h2>核心概念</h2>
+  <dl>
+    <dt><strong>RAG</strong></dt>
+    <dd>Retrieval-Augmented Generation，检索增强生成：先从知识库召回证据，再让大模型基于证据生成答案。</dd>
+
+    <dt><strong>Chunk</strong></dt>
+    <dd>文档切片。把长文档切成可检索、可引用的文本片段。</dd>
+
+    <dt><strong>Child Chunk</strong></dt>
+    <dd>检索单元。只索引到 Qdrant 与 PostgreSQL FTS；通常约 300–600 tokens。</dd>
+
+    <dt><strong>Parent Chunk</strong></dt>
+    <dd>上下文单元。只存 PostgreSQL，不进向量/关键词检索；检索命中 child 后按 <code>parent_chunk_id</code> 回取。</dd>
+
+    <dt><strong>Ingest Task</strong></dt>
+    <dd>异步入库任务（<code>ingest_tasks</code>）。状态典型为 queued → processing → completed/failed。</dd>
+
+    <dt><strong>File Hash</strong></dt>
+    <dd>原始文件字节的哈希（如 SHA-256）。替换时用于快速判断文件是否 unchanged。</dd>
+
+    <dt><strong>Chunk Hash</strong></dt>
+    <dd>基于 <code>normalized_text</code> 的哈希。增量更新时以它判断 child 是 added / removed / unchanged。</dd>
+
+    <dt><strong>Active / Soft Delete</strong></dt>
+    <dd>逻辑可见性：document/chunk 标记为 deleted 或 <code>is_active=false</code>，并同步关闭 Qdrant/FTS 可见性，而不是物理删主路径。</dd>
+
+    <dt><strong>Golden Dataset</strong></dt>
+    <dd>评测样本集（默认 <code>eval/golden_dataset.jsonl</code>），可物化到 <code>eval_datasets</code> / <code>eval_dataset_items</code>。</dd>
+  </dl>
+
+  <h2>流程术语</h2>
+  <dl>
+    <dt><strong>Hybrid Retrieval</strong></dt>
+    <dd>向量检索 + 关键词检索（PostgreSQL FTS，必要时 ILIKE fallback）再经 RRF 融合。</dd>
+
+    <dt><strong>RRF</strong></dt>
+    <dd>Reciprocal Rank Fusion，按排名倒数融合多路检索结果；本项目默认 k=60。</dd>
+
+    <dt><strong>Query Rewrite</strong></dt>
+    <dd>查询改写：在 intent / term expansion 后生成 rewritten_query、search_keywords、sub_queries。</dd>
+
+    <dt><strong>Safety Guard</strong></dt>
+    <dd>查询链路第一步：识别攻击性请求，输出 allow / refuse / redirect。</dd>
+
+    <dt><strong>Citation Checker</strong></dt>
+    <dd>检查答案关键结论是否被检索证据支持，并校正引用字段。</dd>
+
+    <dt><strong>Chunk Diff</strong></dt>
+    <dd>替换文档时，以 child <code>chunk_hash</code> 对比新旧集合，只对变化部分重新 embedding/索引。</dd>
+  </dl>
+
+  <h2>核心表（速记）</h2>
+  <ul>
+    <li><code>documents</code> / <code>document_versions</code> / <code>chunks</code></li>
+    <li><code>ingest_tasks</code> / <code>query_logs</code> / <code>feedback</code></li>
+    <li><code>eval_datasets</code> / <code>eval_dataset_items</code> / <code>eval_runs</code> / <code>eval_run_items</code></li>
+  </ul>
+
+  <h2>相关课程</h2>
+  <ul>
+    <li><a href="../lessons/0001-read-the-project-map.html">第 1 课：项目地图</a></li>
+    <li><a href="four-flows.html">四条主流程图</a></li>
+    <li><a href="data-model.html">数据模型速查</a></li>
+  </ul>
+</article>
+</main>
+</body>
+</html>

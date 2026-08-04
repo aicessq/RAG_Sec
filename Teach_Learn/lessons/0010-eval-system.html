@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>第 10 课：评测体系：golden dataset 与指标</title>
+  <link rel="stylesheet" href="../assets/lesson.css" />
+</head>
+<body>
+<main>
+<article>
+  <p class="small">Teach_Learn · Lesson 0010 · <a href="0009-replace-and-soft-delete.html">上一课</a> · <a href="0011-frontend-map.html">下一课</a></p>
+  <h1>评测体系：golden dataset 与指标</h1>
+  <p>本课目标：你能解释“为什么评测必须持久化”，以及 Recall@K / MRR / citation / refusal 各自衡量什么。</p>
+
+  <div class="callout">
+    <strong>Tangible win：</strong>能一句话说清“golden dataset → 真实 query 链路 → 指标 → eval_runs 持久化”。
+  </div>
+
+  <h2>1. 评测流水线</h2>
+  <pre>eval/golden_dataset.jsonl
+  → eval_service 物化 dataset / items
+  → 对每条样本跑真实 query 链路
+  → 计算指标
+  → 写入 eval_runs / eval_run_items
+  → 返回 run summary</pre>
+
+  <h2>2. 核心指标</h2>
+  <div class="grid">
+    <section class="card">
+      <h3>Recall@K</h3>
+      <p>目标 chunk 是否出现在 top K 中。</p>
+    </section>
+    <section class="card">
+      <h3>MRR</h3>
+      <p>目标 chunk 首次出现的位置质量（倒数排名）。</p>
+    </section>
+    <section class="card">
+      <h3>Citation Accuracy</h3>
+      <p>答案引用是否被证据支持。</p>
+    </section>
+    <section class="card">
+      <h3>Refusal Accuracy</h3>
+      <p>该拒答的问题是否真的触发拒答。</p>
+    </section>
+  </div>
+
+  <h2>3. 为什么必须持久化？</h2>
+  <ul>
+    <li>日志只适合一次性观察，不能稳定比较“这次改动后 Recall@K 是上升还是下降”。</li>
+    <li>评测要成为工程能力，就必须沉淀到 <code>eval_runs</code> / <code>eval_run_items</code>。</li>
+  </ul>
+
+  <h2>4. 练习</h2>
+  <div class="quiz">
+    <ol>
+      <li>为什么 refusal accuracy 要单独统计？</li>
+      <li>citation accuracy 能等价于 answer quality 吗？</li>
+      <li>你改了 retrieval top_k，应该如何验证效果？</li>
+    </ol>
+    <details>
+      <summary>展开参考答案</summary>
+      <ol>
+        <li>安全领域 RAG 不能只看“答得准不准”，还要看“不该答的时候有没有拒答”。</li>
+        <li>不能。它衡量 groundedness 的最低门槛；答案质量还涉及表达、覆盖度与完整性。</li>
+        <li>跑一次 /eval/run，对比前后 Recall@K / MRR。</li>
+      </ol>
+    </details>
+  </div>
+
+  <h2>5. 本课参考</h2>
+  <ul>
+    <li><a href="../reference/four-flows.html">四条主流程图 · 评测</a></li>
+    <li><code>backend/app/services/eval_service.py</code></li>
+    <li><code>eval/golden_dataset.jsonl</code></li>
+  </ul>
+
+  <div class="callout">
+    下一课聚焦<a href="0011-frontend-map.html">前端 MVP 如何对接后端</a>——这是“用户界面如何驱动 API”的关键。
+  </div>
+</article>
+</main>
+</body>
+</html>

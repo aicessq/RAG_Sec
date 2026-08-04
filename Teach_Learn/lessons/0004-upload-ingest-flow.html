@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>第 4 课：上传与异步入库链路</title>
+  <link rel="stylesheet" href="../assets/lesson.css" />
+</head>
+<body>
+<main>
+<article>
+  <p class="small">Teach_Learn · Lesson 0004 · <a href="0003-backend-layering.html">上一课</a> · <a href="0005-chunk-and-index.html">下一课</a></p>
+  <h1>上传与异步入库链路</h1>
+  <p>本课目标：你能从 <code>POST /documents/upload</code> 一路跟到 Celery worker 写完索引，并说出每个阶段“写了什么库”。</p>
+
+  <div class="callout">
+    <strong>Tangible win：</strong>能区分 upload 同步返回的 <code>task_id</code> 与后台真正完成的 <code>ingest_task.status=completed</code>。
+  </div>
+
+  <h2>1. 端到端顺序</h2>
+  <pre>multipart 上传
+  → 校验扩展名 / MIME / 大小
+  → 算 file_hash，原始文件落 storage
+  → 创建 document + version_no=1 + ingest_task(queued)
+  → 投递 Celery
+  → parse → clean → parent/child chunk 落 PG
+  → 仅 child：embedding → Qdrant + FTS
+  → task completed</pre>
+
+  <h2>2. 模块分工</h2>
+  <ul>
+    <li><code>api/upload.py</code>：HTTP 入口</li>
+    <li><code>upload_service.py</code>：校验、存盘、建记录、派发任务</li>
+    <li><code>ingest_worker.py</code>：异步编排</li>
+    <li><code>parser_service</code> / <code>cleaner_service</code> / <code>chunk_service</code></li>
+    <li><code>index_service</code> / <code>embedding_service</code> / <code>vector_store</code> / <code>keyword_store</code></li>
+  </ul>
+
+  <h2>3. 必须记住的规则</h2>
+  <ul>
+    <li><strong>upload 只建新 document</strong>，不能通过 upload 挂到旧 document；新版本用 replace。</li>
+    <li>任务状态 <strong>DB + Redis 双写</strong>；接口查任务以 DB 为准。</li>
+    <li>backend 与 worker 必须共享同一 storage 卷，否则 worker 找不到文件。</li>
+  </ul>
+
+  <h2>4. 练习</h2>
+  <div class="quiz">
+    <ol>
+      <li>上传接口立刻返回 200 且带 task_id，是否代表已经可被检索？</li>
+      <li>用户想“更新已有法规 PDF”，应调哪个接口而不是 upload？</li>
+      <li>解析失败时，你期望在哪张表看到什么字段？</li>
+    </ol>
+    <details>
+      <summary>展开参考答案</summary>
+      <ol>
+        <li>否。只代表已入队；可检索需 task completed 且 child 已索引。</li>
+        <li><code>POST /api/v1/documents/{id}/replace</code>。</li>
+        <li><code>ingest_tasks</code>：<code>status=failed</code>，并有 <code>error_message</code> / <code>finished_at</code>。</li>
+      </ol>
+    </details>
+  </div>
+
+  <h2>5. 本课参考</h2>
+  <ul>
+    <li><a href="../reference/four-flows.html">四条主流程图 · 上传</a></li>
+    <li><a href="../reference/data-model.html">数据模型速查</a></li>
+    <li><code>backend/app/workers/ingest_worker.py</code></li>
+  </ul>
+
+  <div class="callout">
+    下一课聚焦<a href="0005-chunk-and-index.html">Parent-Child 与“只索引 child”</a>——这是本项目最容易误改的设计点。
+  </div>
+</article>
+</main>
+</body>
+</html>

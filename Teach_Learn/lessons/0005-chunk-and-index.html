@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>第 5 课：Parent-Child Chunk 与“只索引 child”</title>
+  <link rel="stylesheet" href="../assets/lesson.css" />
+</head>
+<body>
+<main>
+<article>
+  <p class="small">Teach_Learn · Lesson 0005 · <a href="0004-upload-ingest-flow.html">上一课</a> · <a href="0006-query-preparation.html">下一课</a></p>
+  <h1>Parent-Child Chunk 与“只索引 child”</h1>
+  <p>本课目标：你能解释为什么 <code>parent_chunk_id</code> 是自引用、child 为什么进向量/FTS，而 parent 为什么只存库。</p>
+
+  <div class="callout">
+    <strong>Tangible win：</strong>能一句话解释“child 检索，parent 上下文”——以及检索默认过滤的四重可见性。
+  </div>
+
+  <h2>1. 为什么要 parent-child？</h2>
+  <ul>
+    <li>检索需要短、规范的文本片段（child）。</li>
+    <li>生成答案需要长上下文（parent），不能每次都把整文档塞进 prompt。</li>
+    <li>child 进 Qdrant、FTS；parent 只存 PostgreSQL。</li>
+  </ul>
+
+  <h2>2. 模型关系</h2>
+  <pre>chunks
+├─ child（chunk_type=child, is_active=true）
+└─ parent（chunk_type=parent, is_active=true）
+   └─ parent_chunk_id → self</pre>
+
+  <h2>3. 检索可见性（必须同时满足）</h2>
+  <ol>
+    <li><code>documents.status = active</code></li>
+    <li><code>document_versions.version_status = active</code></li>
+    <li>版本是该 document 的 <code>current_version_id</code></li>
+    <li><code>chunks.is_active = true</code> 且 <code>chunk_type = child</code></li>
+  </ol>
+
+  <h2>4. 练习</h2>
+  <div class="quiz">
+    <ol>
+      <li>检索时为什么不会命中 parent？</li>
+      <li>替换文档时，为什么 child chunk 仍要落新 DB 行（即使向量复用）？</li>
+      <li>你看到一个 chunk 没有 <code>parent_chunk_id</code>，这是什么情况？</li>
+    </ol>
+    <details>
+      <summary>展开参考答案</summary>
+      <ol>
+        <li>查询只查 <code>chunk_type=child</code>。</li>
+        <li>unchanged child 必须保留新版本记录（避免脏读），但向量可复用。</li>
+        <li>是孤儿 chunk；可能是早期版本或手动清理。</li>
+      </ol>
+    </details>
+  </div>
+
+  <h2>5. 本课参考</h2>
+  <ul>
+    <li><a href="../reference/data-model.html">数据模型速查</a></li>
+    <li><a href="../reference/four-flows.html">四条主流程图</a></li>
+    <li><a href="../reference/project-map.html">项目结构速查图</a></li>
+  </ul>
+
+  <div class="callout">
+    下一课聚焦<a href="0006-query-preparation.html">查询前处理：safety / intent / rewrite</a>——这是“让用户提问更适合检索”的第一步。
+  </div>
+</article>
+</main>
+</body>
+</html>

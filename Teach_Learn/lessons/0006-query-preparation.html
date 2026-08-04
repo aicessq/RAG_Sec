@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>第 6 课：查询前处理：safety / intent / rewrite</title>
+  <link rel="stylesheet" href="../assets/lesson.css" />
+</head>
+<body>
+<main>
+<article>
+  <p class="small">Teach_Learn · Lesson 0006 · <a href="0005-chunk-and-index.html">上一课</a> · <a href="0007-hybrid-retrieval.html">下一课</a></p>
+  <h1>查询前处理：safety / intent / rewrite</h1>
+  <p>本课目标：你能解释为什么查询链路第一步是 <code>safety_guard</code>，以及 <code>QueryService.prepare()</code> 做了什么。</p>
+
+  <div class="callout">
+    <strong>Tangible win：</strong>能用一句话说明“安全 → 意图 → 术语扩展 → 改写 → 过滤”的顺序。
+  </div>
+
+  <h2>1. 查询前处理流水线</h2>
+  <pre>query API
+  → safety_guard（攻击性请求识别）
+  → intent_classifier（意图分类）
+  → term_expander（术语扩展）
+  → query_rewriter（改写）
+  → metadata_filter_builder（过滤）</pre>
+
+  <h2>2. 各模块职责</h2>
+  <div class="grid">
+    <section class="card">
+      <h3>safety_guard</h3>
+      <p>识别攻击性请求，输出 allow / refuse / redirect。</p>
+    </section>
+    <section class="card">
+      <h3>intent_classifier</h3>
+      <p>识别用户意图：法规、标准、教材、概念解释、漏洞修复、攻击请求等。</p>
+    </section>
+    <section class="card">
+      <h3>term_expander</h3>
+      <p>扩展术语词典，例如“等保”→“等级保护”。</p>
+    </section>
+    <section class="card">
+      <h3>query_rewriter</h3>
+      <p>生成 rewritten_query、search_keywords、sub_queries。</p>
+    </section>
+  </div>
+
+  <h2>3. 为什么顺序不能乱？</h2>
+  <ul>
+    <li>安全必须先于检索，否则攻击请求会污染检索结果。</li>
+    <li>意图分类影响 filter 和 rewrite 策略。</li>
+    <li>术语扩展提高召回率。</li>
+  </ul>
+
+  <h2>4. 练习</h2>
+  <div class="quiz">
+    <ol>
+      <li>“绕过 WAF 的 SQL 注入 payload”会走哪条路径？</li>
+      <li>“等保三级日志要留多久”会识别为哪种意图？</li>
+      <li>为什么 <code>QueryService.prepare()</code> 不直接调 answer_generator？</li>
+    </ol>
+    <details>
+      <summary>展开参考答案</summary>
+      <ol>
+        <li>safety_guard 会 refuse 或 redirect，不会进入检索。</li>
+        <li>standard_query（标准条款查询）。</li>
+        <li>prepare 只做前处理；answer 是另一条链路，由 answer() 调用。</li>
+      </ol>
+    </details>
+  </div>
+
+  <h2>5. 本课参考</h2>
+  <ul>
+    <li><a href="../reference/four-flows.html">四条主流程图 · 查询</a></li>
+    <li><code>backend/app/services/query_service.py</code></li>
+    <li><code>backend/app/services/safety_guard.py</code></li>
+  </ul>
+
+  <div class="callout">
+    下一课聚焦<a href="0007-hybrid-retrieval.html">混合检索与 RRF 融合</a>——这是“证据从哪里来”的核心。
+  </div>
+</article>
+</main>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>第 12 课：从症状定位文件</title>
+  <link rel="stylesheet" href="../assets/lesson.css" />
+</head>
+<body>
+<main>
+<article>
+  <p class="small">Teach_Learn · Lesson 0012 · <a href="0011-frontend-map.html">上一课</a> · <a href="../README.md">课程总览</a></p>
+  <h1>从症状定位文件：调试方法论</h1>
+  <p>本课目标：给你一个可复用的排查顺序——从用户可见症状反推 API → service → worker/存储，而不是全仓库搜索关键词碰运气。</p>
+
+  <div class="callout">
+    <strong>Tangible win：</strong>面对任意一个功能 bug，你能写出“先看哪 2–3 个文件 + 验证哪一个接口/表字段”。
+  </div>
+
+  <h2>1. 固定排查顺序</h2>
+  <pre>1. 复现路径：哪个页面/接口？同步还是异步？
+2. API 层：请求进没进、错误码是不是统一 error 结构
+3. Service 层：主流程哪一步的输入输出异常
+4. 若异步：worker 日志 + ingest_tasks.status/error_message
+5. 持久化/可见性：PG 记录、Qdrant payload、FTS is_active 是否对齐
+6. 仅当证据不足时，再看 prompt / 模型配置</pre>
+
+  <h2>2. 症状 → 优先文件速查</h2>
+  <div class="grid">
+    <section class="card">
+      <h3>上传后一直 queued</h3>
+      <p><code>upload_service</code> → Celery / <code>ingest_worker</code> → Redis → 共享 storage</p>
+    </section>
+    <section class="card">
+      <h3>能入库但检索为空</h3>
+      <p>chunk 是否 child+active；Qdrant/FTS 是否写入；四重可见性过滤</p>
+    </section>
+    <section class="card">
+      <h3>改写怪异 / 误拒答</h3>
+      <p><code>safety_guard</code> → <code>intent_classifier</code> → <code>query_rewriter</code> + 对应 prompts</p>
+    </section>
+    <section class="card">
+      <h3>答案胡编 / 引用假页码</h3>
+      <p><code>answer_generator</code> + <code>citation_checker</code>；先用 retrieve 看证据是否对</p>
+    </section>
+    <section class="card">
+      <h3>替换后仍搜到旧文</h3>
+      <p><code>update_service</code>：chunk diff、deactivate、current_version_id、三端可见性</p>
+    </section>
+    <section class="card">
+      <h3>评测指标异常</h3>
+      <p><code>eval_service</code> + golden 样本期望字段；确认跑的是真实 query 链路</p>
+    </section>
+  </div>
+
+  <h2>3. 调试接口比“直接看答案”更高效</h2>
+  <ul>
+    <li><code>/query/rewrite</code>：看安全、意图、改写、filter</li>
+    <li><code>/query/retrieve</code>：看向量/关键词/融合结果</li>
+    <li><code>/query/answer</code>：最后才看生成质量</li>
+    <li><code>/documents/tasks/{id}</code>：看入库阶段</li>
+  </ul>
+
+  <h2>4. 综合练习</h2>
+  <div class="quiz">
+    <p><strong>对每个症状，写出：优先文件 + 验证手段</strong></p>
+    <ol>
+      <li>前端 Answer 返回 502，但 curl localhost:8000/health 正常。</li>
+      <li>同一文档 replace 后，file 变了但 embedding 调用次数几乎为 0。</li>
+      <li>攻击性提问仍给出利用步骤。</li>
+    </ol>
+    <details>
+      <summary>展开参考答案</summary>
+      <ol>
+        <li>可能代理干扰或前端 base URL 指错；查 <code>VITE_API_BASE_URL</code>、NO_PROXY、CORS；用 Swagger 直打 <code>/query/answer</code> 排除前端。</li>
+        <li>可能大量 child <code>chunk_hash</code> 未变，走了 unchanged 复用——属预期；用 diff 统计 added 数量与 update_service 日志确认。若内容大变却 0 embedding，查 hash 规范化是否过度。</li>
+        <li><code>safety_guard</code>（规则+LLM）与 answer 是否在 refuse/redirect 后仍生成；查 query_log 的 safety_action 与 API 短路逻辑。</li>
+      </ol>
+    </details>
+  </div>
+
+  <h2>5. 本课参考</h2>
+  <ul>
+    <li><a href="../reference/project-map.html">项目结构速查图</a></li>
+    <li><a href="../reference/four-flows.html">四条主流程图</a></li>
+    <li><a href="../reference/glossary.html">术语表</a></li>
+    <li><a href="../README.md">课程总览</a></li>
+  </ul>
+
+  <div class="callout">
+    学完全部 12 课后：任选一个真实小需求（例如“retrieve 响应多返回一路分数”），自己先列出要改的文件，再让我帮你核对。这就是 Mission 里的成功标准。
+  </div>
+</article>
+</main>
+</body>
+</html>

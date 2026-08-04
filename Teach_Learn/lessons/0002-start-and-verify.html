@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>第 2 课：启动项目并完成第一次验证</title>
+  <link rel="stylesheet" href="../assets/lesson.css" />
+</head>
+<body>
+<main>
+<article>
+  <p class="small">Teach_Learn · Lesson 0002 · <a href="0001-read-the-project-map.html">上一课</a> · <a href="0003-backend-layering.html">下一课</a></p>
+  <h1>启动项目并完成第一次验证</h1>
+  <p>本课目标：你能把依赖拉起来，并知道<strong>哪两个健康检查</strong>分别证明“进程活着”和“依赖通了”。</p>
+
+  <div class="callout">
+    <strong>Tangible win：</strong>你能解释 <code>GET /health</code> 与 <code>GET /api/v1/health/ready</code> 的区别，并说出本地跑 backend 时 <code>.env</code> 该放哪。
+  </div>
+
+  <h2>1. 环境约束（先记住）</h2>
+  <ul>
+    <li>Python 工作必须在项目专用环境（conda <code>rag_sec_phase1</code> 或 <code>.venv</code>），不要用全局 Python。</li>
+    <li><code>Settings</code> 从<strong>当前工作目录</strong>读 <code>.env</code>。从 <code>backend/</code> 起 uvicorn 时，需要 <code>backend/.env</code>。</li>
+    <li>Docker Compose 直接注入环境变量，可规避 cwd 问题；backend 与 worker 必须共享同一 <code>STORAGE_ROOT</code> 卷。</li>
+  </ul>
+
+  <h2>2. 最小启动路径</h2>
+  <pre># 根目录：基础设施 + worker（入库需要）
+docker compose up -d postgres redis qdrant worker
+
+# 或本地 backend（在 backend/）
+conda activate rag_sec_phase1   # 或 .venv
+cd backend
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000</pre>
+  <p>前端（另开终端）：</p>
+  <pre>cd frontend
+cp .env.example .env   # VITE_API_BASE_URL=http://localhost:8000
+npm install
+npm run dev            # http://localhost:5173</pre>
+
+  <h2>3. 验证清单</h2>
+  <ul class="checklist">
+    <li><code>GET /health</code> → 进程存活（liveness）</li>
+    <li><code>GET /api/v1/health/ready</code> → PostgreSQL / Redis / Qdrant 就绪（readiness）</li>
+    <li>Swagger：<code>http://localhost:8000/docs</code></li>
+    <li>有代理时：本地测试设 <code>NO_PROXY=localhost,127.0.0.1</code>，否则可能假 502</li>
+  </ul>
+
+  <h2>4. 测试怎么跑</h2>
+  <pre># 仓库根目录
+pytest                              # 默认排除 integration
+pytest backend/tests/test_health.py
+pytest backend/tests/test_health.py::test_health_returns_ok
+pytest -m integration               # 需要真 PG/Redis/Qdrant，失败不 skip</pre>
+
+  <h2>5. 练习</h2>
+  <div class="quiz">
+    <p><strong>先不看答案：</strong></p>
+    <ol>
+      <li>只起了 backend、没起 postgres，哪个接口更可能先红？</li>
+      <li>为什么 upload 后任务一直 queued，却不该先怀疑 FastAPI 路由？</li>
+      <li>本地从 <code>backend/</code> 启动，却把 <code>.env</code> 只放在仓库根目录，会怎样？</li>
+    </ol>
+    <details>
+      <summary>展开参考答案</summary>
+      <ol>
+        <li><code>/api/v1/health/ready</code>（依赖探测）；<code>/health</code> 仍可能 ok。</li>
+        <li>入库靠 Celery worker + Redis broker；先查 worker 是否在跑、是否同网络同 storage。</li>
+        <li>配置可能读不到，数据库/模型路径用默认值或报错；应放 <code>backend/.env</code> 或显式注入环境变量。</li>
+      </ol>
+    </details>
+  </div>
+
+  <h2>6. 本课参考</h2>
+  <ul>
+    <li><a href="../../CLAUDE.md">CLAUDE.md</a> 常用命令</li>
+    <li><a href="../../Doc/项目启动与使用指南.md">项目启动与使用指南</a></li>
+    <li><a href="../reference/project-map.html">项目结构速查图</a></li>
+  </ul>
+
+  <div class="callout">
+    有不清楚的地方直接问我。下一步：打开 <code>backend/app/main.py</code>，数它注册了哪些 router，然后进入<a href="0003-backend-layering.html">第 3 课</a>。
+  </div>
+</article>
+</main>
+</body>
+</html>

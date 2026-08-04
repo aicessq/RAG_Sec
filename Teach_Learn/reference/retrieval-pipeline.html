@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>检索管线参数</title>
+  <link rel="stylesheet" href="../assets/lesson.css" />
+</head>
+<body>
+<main>
+<article>
+  <p class="small">Teach_Learn · Reference</p>
+  <h1>检索管线参数速查</h1>
+  <p>第一版默认参数来自规格决策表；改代码前先确认是否故意偏离这些值。</p>
+
+  <h2>默认参数</h2>
+  <table>
+    <thead>
+      <tr><th>阶段</th><th>默认值</th><th>说明</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Qdrant metric</td><td>Cosine</td><td>向量相似度</td></tr>
+      <tr><td>Vector top_k</td><td>30</td><td>向量初筛</td></tr>
+      <tr><td>Keyword top_k</td><td>30</td><td>FTS 初筛</td></tr>
+      <tr><td>RRF k</td><td>60</td><td>融合平滑常数</td></tr>
+      <tr><td>Rerank 输入</td><td>融合后前 20</td><td>真实 reranker 重排</td></tr>
+      <tr><td>Evidence top_k</td><td>5</td><td>最终进答案的证据数</td></tr>
+      <tr><td>FTS</td><td>主检索</td><td>ILIKE 仅作中文召回不足时的 fallback</td></tr>
+    </tbody>
+  </table>
+
+  <h2>流水线顺序</h2>
+  <pre>rewritten_query
+  → vector search (30)
+  → keyword search (30, FTS + 可选 ILIKE 并入)
+  → RRF fusion (k=60)
+  → reranker (top 20 → reorder)
+  → evidence top 5
+  → parent context reconstruction
+  → answer + citation check</pre>
+
+  <h2>过滤默认值</h2>
+  <ul>
+    <li><code>is_active=true</code></li>
+    <li><code>version_status=active</code></li>
+    <li><code>current_version_only=true</code></li>
+    <li>用户显式 filter 与系统 filter 冲突时，用户显式优先</li>
+  </ul>
+
+  <div class="callout">
+    调试检索质量时：先用 <code>/api/v1/query/retrieve</code> 看融合结果，再用 <code>/query/rewrite</code> 看改写与 filter，最后才怀疑 answer prompt。
+  </div>
+
+  <h2>相关课程</h2>
+  <ul>
+    <li><a href="../lessons/0007-hybrid-retrieval.html">第 7 课：混合检索与 RRF</a></li>
+    <li><a href="../lessons/0006-query-preparation.html">第 6 课：查询前处理</a></li>
+    <li><a href="four-flows.html">四条主流程图</a></li>
+  </ul>
+</article>
+</main>
+</body>
+</html>

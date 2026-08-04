@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>数据模型速查</title>
+  <link rel="stylesheet" href="../assets/lesson.css" />
+</head>
+<body>
+<main>
+<article>
+  <p class="small">Teach_Learn · Reference</p>
+  <h1>数据模型速查</h1>
+  <p>PostgreSQL 是真相源；Qdrant 只索引 active child chunks；检索默认受四重可见性约束。</p>
+
+  <h2>核心实体关系</h2>
+  <pre>documents 1──* document_versions
+    │               │
+    │               └──* chunks (parent / child)
+    │                     parent_chunk_id 自引用
+    └── current_version_id → 某一个 version
+
+documents 1──* ingest_tasks
+query_logs 1──* feedback
+eval_datasets 1──* eval_dataset_items
+eval_datasets 1──* eval_runs 1──* eval_run_items</pre>
+
+  <h2>默认检索可见性（必须同时满足）</h2>
+  <ol>
+    <li><code>documents.status = active</code></li>
+    <li><code>document_versions.version_status = active</code></li>
+    <li>版本是该 document 的 <code>current_version_id</code></li>
+    <li><code>chunks.is_active = true</code> 且 <code>chunk_type = child</code></li>
+  </ol>
+
+  <h2>关键字段</h2>
+  <div class="grid">
+    <section class="card">
+      <h3>documents</h3>
+      <p><code>doc_type</code>、<code>status</code>、<code>current_version_id</code>、<code>security_domain</code>、<code>tags</code></p>
+    </section>
+    <section class="card">
+      <h3>document_versions</h3>
+      <p><code>version_no</code>、<code>file_hash</code>、<code>version_status</code>、<code>storage_path</code></p>
+    </section>
+    <section class="card">
+      <h3>chunks</h3>
+      <p><code>chunk_type</code>、<code>chunk_hash</code>、<code>parent_chunk_id</code>、<code>search_tsv</code>、<code>is_active</code>、页码/条款元数据</p>
+    </section>
+    <section class="card">
+      <h3>ingest_tasks</h3>
+      <p><code>task_type</code>（ingest/replace/reindex）、<code>status</code>、<code>progress</code>、<code>error_message</code></p>
+    </section>
+  </div>
+
+  <h2>非显而易见规则</h2>
+  <ul>
+    <li>upload 只创建<strong>新 document</strong>；新版本走 replace。</li>
+    <li>parent 存库但不进 Qdrant / 关键词主索引。</li>
+    <li>chunk diff 主键是 <code>chunk_hash</code>，不是 <code>chunk_index</code>。</li>
+    <li>unchanged child 在新版本仍会落新 DB 行，但可复用旧向量。</li>
+    <li>任务状态：Redis 实时 + DB 持久；业务查询以 DB 为准。</li>
+  </ul>
+
+  <h2>相关课程</h2>
+  <ul>
+    <li><a href="../lessons/0005-chunk-and-index.html">第 5 课：Chunk 与索引</a></li>
+    <li><a href="../lessons/0009-replace-and-soft-delete.html">第 9 课：替换与软删除</a></li>
+    <li><a href="glossary.html">术语表</a></li>
+  </ul>
+</article>
+</main>
+</body>
+</html>

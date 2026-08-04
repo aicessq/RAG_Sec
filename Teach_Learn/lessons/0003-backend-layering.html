@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>第 3 课：后端分层 API / Service / Worker</title>
+  <link rel="stylesheet" href="../assets/lesson.css" />
+</head>
+<body>
+<main>
+<article>
+  <p class="small">Teach_Learn · Lesson 0003 · <a href="0002-start-and-verify.html">上一课</a> · <a href="0004-upload-ingest-flow.html">下一课</a></p>
+  <h1>后端分层：API / Service / Worker</h1>
+  <p>本课目标：看到一个需求时，你能判断该改路由、服务，还是异步 worker——而不是在三个目录里同时“乱改”。</p>
+
+  <div class="callout">
+    <strong>Tangible win：</strong>能用一句话说明为什么 <code>api/</code> 必须保持薄，以及 <code>QueryService</code> 在链路里的角色。
+  </div>
+
+  <h2>1. 三层各自负责什么</h2>
+  <div class="grid">
+    <section class="card">
+      <h3><code>api/</code></h3>
+      <p>HTTP 边界：参数校验、调用 service、把异常翻译成统一错误响应。不写主流程。</p>
+    </section>
+    <section class="card">
+      <h3><code>services/</code></h3>
+      <p>业务编排：upload、retrieve、answer、eval、update。外部模型调用也封装在这里。</p>
+    </section>
+    <section class="card">
+      <h3><code>workers/</code></h3>
+      <p>Celery 异步执行：ingest / replace 等长任务，更新 <code>ingest_tasks</code> 与索引。</p>
+    </section>
+  </div>
+
+  <h2>2. 请求怎么穿层</h2>
+  <pre>HTTP
+  → main.py 注册的 router（注意：本项目显式展开 router，不依赖聚合 include）
+  → api/*.py 薄处理
+  → services/* 主逻辑
+  → models / db 持久化
+  → 外部：PG / Redis / Qdrant / 本地 embedding / LLM API</pre>
+  <p>查询链路的编排中心是 <code>services/query_service.py</code>：<code>prepare()</code> 与 <code>answer()</code> 把 safety → rewrite → retrieve → generate 串起来；<code>api/query.py</code> 只做入参出参。</p>
+
+  <h2>3. 同步 vs 异步怎么选</h2>
+  <ul>
+    <li><strong>同步 service：</strong>查询改写、检索、生成答案——用户在等结果。</li>
+    <li><strong>异步 worker：</strong>解析 PDF、切块、embedding、写索引——耗时长，用 task_id 查进度。</li>
+  </ul>
+
+  <h2>4. 练习</h2>
+  <div class="quiz">
+    <p><strong>先不看答案：</strong></p>
+    <ol>
+      <li>“给 /query/answer 增加一个 debug 字段返回 rewritten_query”，主要改哪两层？</li>
+      <li>“入库失败要把更细的阶段写进 progress”，优先改哪里？</li>
+      <li>为什么不该在 <code>api/upload.py</code> 里直接调 PyMuPDF 解析 PDF？</li>
+    </ol>
+    <details>
+      <summary>展开参考答案</summary>
+      <ol>
+        <li>schema/response 与 <code>api/query.py</code> 出参；数据来自已有 <code>QueryService</code>，不必把逻辑塞进 route。</li>
+        <li><code>workers/ingest_worker.py</code>（以及它调用的 service），并更新 <code>ingest_tasks</code>；API 只读任务状态。</li>
+        <li>解析属于入库流水线，应在 worker/service；API 只负责接收文件与创建任务，否则超时且难测难复用。</li>
+      </ol>
+    </details>
+  </div>
+
+  <h2>5. 本课参考</h2>
+  <ul>
+    <li><code>backend/app/main.py</code></li>
+    <li><code>backend/app/api/query.py</code> + <code>services/query_service.py</code></li>
+    <li><a href="../reference/project-map.html">项目结构速查图</a></li>
+    <li><a href="../reference/four-flows.html">四条主流程图</a></li>
+  </ul>
+
+  <div class="callout">
+    问我：“带我读一遍 query_service.prepare 的调用顺序。”下一课进入<a href="0004-upload-ingest-flow.html">上传与异步入库</a>。
+  </div>
+</article>
+</main>
+</body>
+</html>

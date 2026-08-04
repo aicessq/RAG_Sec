@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>第 9 课：替换、增量更新与软删除</title>
+  <link rel="stylesheet" href="../assets/lesson.css" />
+</head>
+<body>
+<main>
+<article>
+  <p class="small">Teach_Learn · Lesson 0009 · <a href="0008-answer-and-citation.html">上一课</a> · <a href="0010-eval-system.html">下一课</a></p>
+  <h1>替换、增量更新与软删除</h1>
+  <p>本课目标：你能解释“为什么不能全库重建”，以及 chunk_hash diff 如何决定 added / removed / unchanged。</p>
+
+  <div class="callout">
+    <strong>Tangible win：</strong>能一句话说清“file_hash 快速判断 unchanged，chunk_hash 决定增量更新范围”。
+  </div>
+
+  <h2>1. 替换流程</h2>
+  <pre>replace API
+  → 校验 file_hash（unchanged 则拒绝新建版本）
+  → 创建新 version + replace task
+  → 重新 parse / clean / chunk
+  → 以 child chunk_hash 做 diff
+  → added：重嵌索引
+  → removed：三端停用（PG / Qdrant / FTS）
+  → unchanged：复用旧向量
+  → 切换 current_version_id</pre>
+
+  <h2>2. 为什么必须 chunk_hash diff？</h2>
+  <ul>
+    <li>全库重建太慢、太贵。</li>
+    <li>只对变化的 child 重算 embedding。</li>
+    <li>unchanged child 复用旧向量，但必须落新 DB 行（避免脏读）。</li>
+  </ul>
+
+  <h2>3. 软删除</h2>
+  <pre>soft delete：
+  documents.status = deleted
+  chunks.is_active = false
+  Qdrant / FTS 可见性同步关闭</pre>
+
+  <h2>4. 练习</h2>
+  <div class="quiz">
+    <ol>
+      <li>用户上传同一份 PDF，file_hash 相同，会发生什么？</li>
+      <li>为什么 soft delete 必须同步关闭 Qdrant 可见性？</li>
+      <li>你看到一个 chunk 的 is_active=false，但 Qdrant 仍可检索，这是什么问题？</li>
+    </ol>
+    <details>
+      <summary>展开参考答案</summary>
+      <ol>
+        <li>返回 file_unchanged，不创建新版本。</li>
+        <li>否则检索仍会命中已删除内容。</li>
+        <li>三端可见性不同步；需要修复 update_service 的 deactivate 逻辑。</li>
+      </ol>
+    </details>
+  </div>
+
+  <h2>5. 本课参考</h2>
+  <ul>
+    <li><a href="../reference/four-flows.html">四条主流程图 · 替换</a></li>
+    <li><a href="../reference/data-model.html">数据模型速查</a></li>
+    <li><code>backend/app/services/update_service.py</code></li>
+  </ul>
+
+  <div class="callout">
+    下一课聚焦<a href="0010-eval-system.html">评测体系</a>——这是“如何量化系统变好了没有”的关键。
+  </div>
+</article>
+</main>
+</body>
+</html>

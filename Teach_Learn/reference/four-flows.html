@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>四条主流程图</title>
+  <link rel="stylesheet" href="../assets/lesson.css" />
+</head>
+<body>
+<main>
+<article>
+  <p class="small">Teach_Learn · Reference</p>
+  <h1>四条主流程图</h1>
+  <p>读本项目时，优先用这四条链路建立骨架，而不是按文件名乱翻。</p>
+
+  <h2>1. 上传 / Ingest</h2>
+  <pre>upload API
+  → upload_service（校验 / 存盘 / 建 document+version+task）
+  → Celery ingest_worker
+  → parser → cleaner → chunk
+  → 只为 child chunk 做 embedding
+  → Qdrant upsert + PostgreSQL FTS
+  → ingest_task completed</pre>
+  <p class="small">关键文件：<code>api/upload.py</code>、<code>services/upload_service.py</code>、<code>workers/ingest_worker.py</code>、<code>parser_service</code>、<code>cleaner_service</code>、<code>chunk_service</code>、<code>index_service</code>。</p>
+
+  <h2>2. 查询 / Answer</h2>
+  <pre>query API
+  → safety_guard
+  → intent_classifier
+  → term_expander
+  → query_rewriter
+  → metadata_filter
+  → hybrid retrieval（vector + FTS）
+  → RRF → reranker
+  → parent context 回取
+  → answer_generator
+  → citation_checker
+  → query_log</pre>
+  <p class="small">关键文件：<code>api/query.py</code>、<code>services/query_service.py</code> 及 safety/intent/rewrite/retriever/answer/citation 系列服务。</p>
+
+  <h2>3. 替换 / Soft Delete</h2>
+  <pre>replace API
+  → file_hash 快速比对（unchanged 则拒绝新建版本）
+  → 新 version + replace task
+  → 重新 parse/clean/chunk
+  → 以 child chunk_hash 做 diff
+  → added 重嵌索引 / unchanged 复用向量 / removed 三端停用
+  → 切换 current_version_id
+
+soft delete：
+  documents.status=deleted
+  chunks.is_active=false
+  Qdrant / FTS 可见性同步关闭</pre>
+  <p class="small">关键文件：<code>api/documents.py</code>、<code>services/update_service.py</code>。</p>
+
+  <h2>4. 评测 / Eval</h2>
+  <pre>eval/golden_dataset.jsonl
+  → eval_service 物化 dataset/items
+  → 对每条样本跑真实 query 链路
+  → Recall@K / MRR / citation accuracy / refusal accuracy / latency
+  → 写入 eval_runs / eval_run_items</pre>
+  <p class="small">关键文件：<code>api/eval.py</code>、<code>services/eval_service.py</code>、<code>eval/golden_dataset.jsonl</code>。</p>
+
+  <div class="callout">
+    <strong>读代码口诀：</strong>API 找入口 → Service 找流程 → Worker 找异步 → Models 找持久化 → Qdrant/FTS 找检索可见性。
+  </div>
+
+  <h2>相关课程</h2>
+  <ul>
+    <li><a href="../lessons/0004-upload-ingest-flow.html">第 4 课：上传入库</a></li>
+    <li><a href="../lessons/0006-query-preparation.html">第 6 课：查询前处理</a></li>
+    <li><a href="../lessons/0007-hybrid-retrieval.html">第 7 课：混合检索</a></li>
+    <li><a href="../lessons/0008-answer-and-citation.html">第 8 课：答案与引用</a></li>
+    <li><a href="../lessons/0009-replace-and-soft-delete.html">第 9 课：替换与软删除</a></li>
+    <li><a href="../lessons/0010-eval-system.html">第 10 课：评测</a></li>
+  </ul>
+</article>
+</main>
+</body>
+</html>
