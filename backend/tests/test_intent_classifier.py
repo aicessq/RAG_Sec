@@ -39,3 +39,11 @@ def test_intent_classifier_identifies_attack_request() -> None:
 
     assert result.intent == "attack_request"
     assert result.suggested_doc_types == []
+
+
+def test_intent_classifier_identifies_what_is_concept_without_single_character_law_false_positive() -> None:
+    classifier = IntentClassifier()
+
+    for query in ["什么是个人信息", "个人信息是什么", "个人信息的定义", "如何定义个人信息", "个人信息是指什么"]:
+        result = classifier.classify(query)
+        assert result.intent == "concept_explanation", query

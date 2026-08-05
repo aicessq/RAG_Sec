@@ -45,6 +45,7 @@ class FakeIndexServiceFactory:
         self.fake_service = fake_service
 
     def from_db(self, db, *, allow_embedding_fallback=False):
+        assert allow_embedding_fallback is False
         return self.fake_service
 
 

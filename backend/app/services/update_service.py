@@ -264,8 +264,10 @@ def apply_incremental_update(
         if bucket:
             unchanged_pairs.append((old_chunk, bucket.pop(0)))
 
-    resolved_embedding = embedding_service or get_embedding_service(allow_fallback=True)
+    resolved_embedding = embedding_service or get_embedding_service()
     resolved_vector_store = vector_store or QdrantVectorStore.from_settings()
+    resolved_vector_store.expected_embedding_identity = resolved_embedding.identity
+    resolved_vector_store.validate_embedding_identity()
     keyword_store = KeywordStore.from_db(db)
     index_service = IndexService(
         embedding_service=resolved_embedding,

@@ -1,7 +1,24 @@
-"""重建索引 worker。
+"""安全全量重建向量索引的 Celery 任务。"""
 
-Phase 0 占位文件：本模块属于规格 §5 规划的后续 Phase，当前不实现任何业务逻辑。
-后续 Phase 实现时再补全，避免提前超范围实现。
-"""
+from __future__ import annotations
 
-# TODO: 待对应 Phase 实现。
+from typing import Any
+
+from app.db.session import SessionLocal
+from app.services.reindex_service import ReindexService
+from app.workers.celery_app import celery_app
+
+
+@celery_app.task(name="app.workers.reindex_worker.reindex_collection_task")
+def reindex_collection_task(
+    *,
+    target_collection: str,
+    batch_size: int = 128,
+) -> dict[str, Any]:
+    """用真实 embedding 将当前有效 child chunks 写入显式的新 collection。"""
+    db = SessionLocal()
+    try:
+        service = ReindexService.from_db(db, target_collection=target_collection)
+        return service.rebuild(target_collection, batch_size=batch_size)
+    finally:
+        db.close()

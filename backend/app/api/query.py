@@ -27,7 +27,6 @@ from app.schemas.query import (
     SafetyGuardResponse,
 )
 from app.services.answer_generator import AnswerCitation, EvidenceContext
-from app.services.metadata_filter import MetadataFilter
 from app.services.query_service import QueryService
 from app.services.retriever import HybridRetriever
 
@@ -41,13 +40,23 @@ def retrieve_chunks(
 ) -> QueryRetrieveResponse:
     """执行 Phase 6 检索调试接口。"""
     try:
-        retriever = HybridRetriever.from_db(db, allow_embedding_fallback=True)
-        result = retriever.retrieve(
-            query=request.query,
-            top_k=request.top_k,
-            filters=MetadataFilter.from_input(request.filters.model_dump()),
-            debug=request.debug,
-        )
+        service = QueryService(db)
+        prepared = service.prepare(query=request.query, explicit_filters=request.filters.model_dump())
+        retriever = HybridRetriever.from_db(db)
+        retrieval_kwargs = {
+            "query": prepared.rewritten.rewritten_query,
+            "top_k": request.top_k,
+            "filters": prepared.filters,
+            "debug": request.debug,
+        }
+        if hasattr(retriever, "search"):
+            result = retriever.search(
+                **retrieval_kwargs,
+                search_keywords=prepared.rewritten.search_keywords,
+                sub_queries=prepared.rewritten.sub_queries,
+            )
+        else:
+            result = retriever.retrieve(**retrieval_kwargs)
     except ValueError as exc:
         raise _bad_request(str(exc)) from exc
     except HTTPException:
@@ -56,7 +65,7 @@ def retrieve_chunks(
         raise _internal_error("检索失败，请稍后重试", str(exc)) from exc
 
     return QueryRetrieveResponse(
-        query=result.query,
+        query=request.query,
         top_k=result.top_k,
         chunks=[_to_chunk_result(item) for item in result.final_results],
         debug=(
@@ -117,7 +126,7 @@ def answer_query(
             top_k=request.top_k,
             explicit_filters=request.filters.model_dump(),
             debug=request.debug,
-            retriever=HybridRetriever.from_db(db, allow_embedding_fallback=True),
+            retriever=HybridRetriever.from_db(db),
         )
         prepared = result.preparation
     except ValueError as exc:

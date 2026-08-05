@@ -41,12 +41,19 @@ class IntentClassifier:
                 reason="命中了标准、等级保护或规范类关键词",
                 suggested_doc_types=["standard", "policy"],
             )
-        if any(keyword in normalized_query for keyword in ["法", "条例", "规定", "办法", "条"]):
+        if any(keyword in normalized_query for keyword in ["法律", "法规", "条例", "规定", "办法", "条款", "第"]):
             return IntentResult(
                 intent="law_query",
                 confidence=0.85,
                 reason="命中了法规条文相关关键词",
                 suggested_doc_types=["law", "regulation", "policy"],
+            )
+        if any(keyword in normalized_query for keyword in ["什么是", "是什么", "的定义", "如何定义", "是指什么", "原理", "概念", "为什么"]):
+            return IntentResult(
+                intent="concept_explanation",
+                confidence=0.88,
+                reason="问题更偏概念解释、定义与原理说明",
+                suggested_doc_types=["law", "regulation", "standard", "textbook", "manual", "note"],
             )
         if any(keyword in normalized_query for keyword in ["教材", "课本", "手册", "怎么讲", "章节"]):
             return IntentResult(
@@ -75,13 +82,6 @@ class IntentClassifier:
                 confidence=0.80,
                 reason="问题目标更像总结与归纳",
                 suggested_doc_types=["law", "standard", "textbook", "note"],
-            )
-        if any(keyword in normalized_query for keyword in ["是什么", "原理", "概念", "为什么"]):
-            return IntentResult(
-                intent="concept_explanation",
-                confidence=0.78,
-                reason="问题更偏概念解释与原理说明",
-                suggested_doc_types=["textbook", "manual", "note"],
             )
 
         return IntentResult(

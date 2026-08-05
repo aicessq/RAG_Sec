@@ -68,7 +68,12 @@ async def upload_document(
             status=result.status,
         )
     except UploadValidationError as exc:
-        status_code = 415 if exc.code == "unsupported_file_type" else 400
+        if exc.code == "unsupported_file_type":
+            status_code = 415
+        elif exc.code == "duplicate_document":
+            status_code = 409
+        else:
+            status_code = 400
         raise HTTPException(
             status_code=status_code,
             detail={

@@ -42,6 +42,7 @@ dependencies = [
     "PyMuPDF>=1.24",
     # Phase 5：本地 embedding / reranker 封装
     "sentence-transformers>=3.0",
+    "transformers>=4.51.0",
     "torch>=2.3",
 ]
 

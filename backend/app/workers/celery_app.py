@@ -15,7 +15,11 @@ celery_app = Celery(
     "cybersec_rag_agent",
     broker=settings.celery_broker_url,
     backend=settings.celery_result_backend,
-    include=["app.workers.ingest_worker", "app.workers.recovery_worker"],
+    include=[
+        "app.workers.ingest_worker",
+        "app.workers.recovery_worker",
+        "app.workers.reindex_worker",
+    ],
 )
 
 celery_app.conf.update(

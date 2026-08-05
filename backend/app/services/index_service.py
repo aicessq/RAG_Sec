@@ -67,6 +67,7 @@ class IndexService:
         """按当前数据库会话构造索引服务。"""
         resolved_embedding = embedding_service or get_embedding_service(allow_fallback=allow_embedding_fallback)
         resolved_vector_store = vector_store or QdrantVectorStore.from_settings()
+        resolved_vector_store.expected_embedding_identity = resolved_embedding.identity
         resolved_keyword_store = KeywordStore.from_db(db)
         return cls(
             embedding_service=resolved_embedding,
@@ -81,8 +82,12 @@ class IndexService:
             return IndexBuildResult(indexed_chunk_count=0, vector_upsert_count=0, keyword_updated_count=0)
 
         self.vector_store.ensure_collection()
+        self._validate_existing_index_identity()
         embeddings = self.embedding_service.embed_texts([chunk.normalized_text for chunk in child_chunks])
-        payloads = [self.build_payload(chunk, version=version) for chunk in child_chunks]
+        payloads = [
+            {**self.build_payload(chunk, version=version), "embedding_identity": self.embedding_service.identity}
+            for chunk in child_chunks
+        ]
         points = [
             VectorPoint(
                 chunk_id=str(chunk.id),
@@ -98,6 +103,9 @@ class IndexService:
             vector_upsert_count=vector_upsert_count,
             keyword_updated_count=keyword_updated_count,
         )
+
+    def _validate_existing_index_identity(self) -> None:
+        self.vector_store.validate_embedding_identity(allow_empty=True)
 
     @staticmethod
     def build_payload(chunk: Chunk, *, version: DocumentVersion) -> dict[str, Any]:

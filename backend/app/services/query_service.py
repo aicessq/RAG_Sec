@@ -120,13 +120,21 @@ class QueryService:
                 latency_ms=latency_ms,
             )
 
-        active_retriever = retriever or HybridRetriever.from_db(self.db, allow_embedding_fallback=True)
-        retrieval = active_retriever.retrieve(
-            query=prepared.rewritten.rewritten_query,
-            top_k=top_k,
-            filters=effective_filters,
-            debug=debug,
-        )
+        active_retriever = retriever or HybridRetriever.from_db(self.db)
+        retrieval_kwargs = {
+            "query": prepared.rewritten.rewritten_query,
+            "top_k": top_k,
+            "filters": effective_filters,
+            "debug": debug,
+        }
+        if hasattr(active_retriever, "search"):
+            retrieval = active_retriever.search(
+                **retrieval_kwargs,
+                search_keywords=prepared.rewritten.search_keywords,
+                sub_queries=prepared.rewritten.sub_queries,
+            )
+        else:
+            retrieval = active_retriever.retrieve(**retrieval_kwargs)
         evidence_contexts = build_evidence_contexts(self.db, retrieval.final_results)
         generated = AnswerGenerator().generate(query=query, evidence_contexts=evidence_contexts)
         checked = CitationChecker().check(generated=generated, evidence_contexts=evidence_contexts)
@@ -172,8 +180,11 @@ class QueryService:
             safety_action=prepared.safety.action,
             risk_type=prepared.safety.risk_type,
             filters=prepared.filters.to_payload_dict(),
-            retrieved_chunk_ids=[str(item.chunk_id) for item in retrieval.final_results],
-            reranked_chunk_ids=[],
+            retrieved_chunk_ids=[str(item.chunk_id) for item in retrieval.debug.fused_results or retrieval.final_results],
+            reranked_chunk_ids=[
+                str(item.chunk_id)
+                for item in getattr(retrieval.debug, "reranked_results", []) or retrieval.final_results
+            ],
             answer=checked.fixed_answer,
             answer_status=checked.answer_status,
             latency_ms=latency_ms,

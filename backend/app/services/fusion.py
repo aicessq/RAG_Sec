@@ -7,6 +7,8 @@ Phase 6 只负责把向量检索与关键词检索结果按 RRF 合并，
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import hashlib
+import re
 
 
 RRF_K = 60
@@ -50,13 +52,18 @@ def reciprocal_rank_fusion(
     *,
     k: int = RRF_K,
 ) -> list[FusedRetrievalHit]:
-    """按 chunk_id 对两路结果做 RRF 融合。"""
+    """按内容身份对两路结果做 RRF 融合。"""
     fused: dict[str, FusedRetrievalHit] = {}
 
     for source_name, hits in (("vector", vector_hits), ("keyword", keyword_hits)):
+        seen_in_source: set[str] = set()
         for rank, hit in enumerate(hits, start=1):
-            if hit.chunk_id not in fused:
-                fused[hit.chunk_id] = FusedRetrievalHit(
+            content_key = _content_identity(hit)
+            if content_key in seen_in_source:
+                continue
+            seen_in_source.add(content_key)
+            if content_key not in fused:
+                fused[content_key] = FusedRetrievalHit(
                     chunk_id=hit.chunk_id,
                     score=hit.score,
                     source=hit.source,
@@ -76,8 +83,18 @@ def reciprocal_rank_fusion(
                     security_domain=list(hit.security_domain),
                     metadata=dict(hit.metadata),
                 )
-            fused_hit = fused[hit.chunk_id]
+            fused_hit = fused[content_key]
             fused_hit.rrf_score += 1.0 / (k + rank)
             fused_hit.source_scores[source_name] = hit.score
 
     return sorted(fused.values(), key=lambda item: item.rrf_score, reverse=True)
+
+
+def _content_identity(hit: RetrievalHit) -> str:
+    chunk_hash = str(hit.metadata.get("chunk_hash") or "").strip()
+    if chunk_hash:
+        return f"hash:{chunk_hash}"
+    normalized = re.sub(r"\s+", "", hit.chunk_text).lower()
+    if normalized:
+        return f"text:{hashlib.sha256(normalized.encode('utf-8')).hexdigest()}"
+    return f"id:{hit.chunk_id}"

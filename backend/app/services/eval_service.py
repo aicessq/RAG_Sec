@@ -136,7 +136,7 @@ def run_eval(
     db.commit()
     db.refresh(run)
 
-    retriever = HybridRetriever.from_db(db, allow_embedding_fallback=True)
+    retriever = HybridRetriever.from_db(db)
     answer_generator = AnswerGenerator()
     citation_checker = CitationChecker()
 
@@ -239,11 +239,13 @@ def _evaluate_item(
         explicit_filters={"doc_type": [dataset_item.expected_doc_type]} if dataset_item.expected_doc_type else {},
         suggested_doc_types=intent.suggested_doc_types,
     )
-    retrieval = retriever.retrieve(
+    retrieval = retriever.search(
         query=rewritten.rewritten_query,
         top_k=5,
         filters=MetadataFilter.from_input(built_filters.to_payload_dict()),
         debug=False,
+        search_keywords=rewritten.search_keywords,
+        sub_queries=rewritten.sub_queries,
     )
     retrieved_chunk_ids = [str(item.chunk_id) for item in retrieval.final_results]
     evidence_contexts = build_evidence_contexts(db, retrieval.final_results)

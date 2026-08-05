@@ -84,86 +84,45 @@ class KeywordStore:
         statement = self._apply_filters(statement, effective_filters, current_version)
         rows = self.db.execute(statement).all()
 
-        if rows:
-            return [
-                RetrievalHit(
-                    chunk_id=str(chunk.id),
-                    score=float(hit_rank or 0.0),
-                    source="keyword",
-                    chunk_text=chunk.text,
-                    document_id=str(chunk.document_id),
-                    version_id=str(chunk.version_id),
-                    doc_title=chunk.doc_title,
-                    doc_type=chunk.doc_type,
-                    chapter=chunk.chapter,
-                    section=chunk.section,
-                    article_no=chunk.article_no,
-                    page_start=chunk.page_start,
-                    page_end=chunk.page_end,
-                    parent_chunk_id=str(chunk.parent_chunk_id) if chunk.parent_chunk_id else None,
-                    version_status=version_status,
-                    is_active=chunk.is_active,
-                    security_domain=list(chunk.security_domain),
-                    metadata={
-                        "chunk_id": str(chunk.id),
-                        "document_id": str(chunk.document_id),
-                        "version_id": str(chunk.version_id),
-                        "doc_title": chunk.doc_title,
-                        "doc_type": chunk.doc_type,
-                        "chapter": chunk.chapter,
-                        "section": chunk.section,
-                        "article_no": chunk.article_no,
-                        "page_start": chunk.page_start,
-                        "page_end": chunk.page_end,
-                        "parent_chunk_id": str(chunk.parent_chunk_id) if chunk.parent_chunk_id else None,
-                        "version_status": version_status,
-                        "security_domain": list(chunk.security_domain),
-                        "is_active": chunk.is_active,
-                    },
-                )
-                for chunk, version_status, _current_version_id, hit_rank in rows
-            ]
-
-        fallback = self._build_ilike_fallback_query(query, top_k=top_k, filters=effective_filters, current_version=current_version)
+        fts_hits = [self._row_to_hit(chunk, version_status, score=float(hit_rank or 0.0)) for chunk, version_status, _current_version_id, hit_rank in rows]
+        fallback = self._build_ilike_fallback_query(
+            query, top_k=top_k, filters=effective_filters, current_version=current_version
+        )
         fallback_rows = self.db.execute(fallback).all()
-        return [
-            RetrievalHit(
-                chunk_id=str(chunk.id),
-                score=0.0,
-                source="keyword",
-                chunk_text=chunk.text,
-                document_id=str(chunk.document_id),
-                version_id=str(chunk.version_id),
-                doc_title=chunk.doc_title,
-                doc_type=chunk.doc_type,
-                chapter=chunk.chapter,
-                section=chunk.section,
-                article_no=chunk.article_no,
-                page_start=chunk.page_start,
-                page_end=chunk.page_end,
-                parent_chunk_id=str(chunk.parent_chunk_id) if chunk.parent_chunk_id else None,
-                version_status=version_status,
-                is_active=chunk.is_active,
-                security_domain=list(chunk.security_domain),
-                metadata={
-                    "chunk_id": str(chunk.id),
-                    "document_id": str(chunk.document_id),
-                    "version_id": str(chunk.version_id),
-                    "doc_title": chunk.doc_title,
-                    "doc_type": chunk.doc_type,
-                    "chapter": chunk.chapter,
-                    "section": chunk.section,
-                    "article_no": chunk.article_no,
-                    "page_start": chunk.page_start,
-                    "page_end": chunk.page_end,
-                    "parent_chunk_id": str(chunk.parent_chunk_id) if chunk.parent_chunk_id else None,
-                    "version_status": version_status,
-                    "security_domain": list(chunk.security_domain),
-                    "is_active": chunk.is_active,
-                },
-            )
-            for chunk, version_status, _current_version_id in fallback_rows
+        combined = [
+            *fts_hits,
+            *[
+                self._row_to_hit(chunk, version_status, score=0.0)
+                for chunk, version_status, _current_version_id in fallback_rows
+            ],
         ]
+        unique_hits: dict[str, RetrievalHit] = {}
+        for hit in combined:
+            unique_hits.setdefault(hit.chunk_id, hit)
+        return list(unique_hits.values())[:top_k]
+
+    @staticmethod
+    def _row_to_hit(chunk: Chunk, version_status: str | None, *, score: float) -> RetrievalHit:
+        metadata = {
+            "chunk_id": str(chunk.id), "chunk_hash": chunk.chunk_hash,
+            "document_id": str(chunk.document_id), "version_id": str(chunk.version_id),
+            "doc_title": chunk.doc_title, "doc_type": chunk.doc_type,
+            "chapter": chunk.chapter, "section": chunk.section, "article_no": chunk.article_no,
+            "page_start": chunk.page_start, "page_end": chunk.page_end,
+            "parent_chunk_id": str(chunk.parent_chunk_id) if chunk.parent_chunk_id else None,
+            "version_status": version_status, "security_domain": list(chunk.security_domain),
+            "is_active": chunk.is_active, "chunk_type": chunk.chunk_type,
+        }
+        return RetrievalHit(
+            chunk_id=str(chunk.id), score=score, source="keyword", chunk_text=chunk.text,
+            document_id=str(chunk.document_id), version_id=str(chunk.version_id),
+            doc_title=chunk.doc_title, doc_type=chunk.doc_type, chapter=chunk.chapter,
+            section=chunk.section, article_no=chunk.article_no, page_start=chunk.page_start,
+            page_end=chunk.page_end,
+            parent_chunk_id=str(chunk.parent_chunk_id) if chunk.parent_chunk_id else None,
+            version_status=version_status, is_active=chunk.is_active,
+            security_domain=list(chunk.security_domain), metadata=metadata,
+        )
 
     def deactivate_chunks(self, chunk_ids: Sequence[str | UUID]) -> int:
         """把指定 chunk 软删除为不可检索。"""
@@ -208,7 +167,7 @@ class KeywordStore:
 
     def _build_ilike_fallback_query(self, query: str, *, top_k: int, filters: MetadataFilter, current_version):
         """FTS 未命中时，对编号/术语类内容做保守 ILIKE 兜底。"""
-        pattern = f"%{query}%"
+        pattern = f"%{_escape_ilike(query)}%"
         statement = (
             select(Chunk, current_version.version_status, Document.current_version_id)
             .join(Document, Document.id == Chunk.document_id)
@@ -217,11 +176,15 @@ class KeywordStore:
             .where(Chunk.chunk_type == "child")
             .where(
                 or_(
-                    Chunk.normalized_text.ilike(pattern),
-                    Chunk.doc_title.ilike(pattern),
-                    Chunk.article_no.ilike(pattern),
+                    Chunk.normalized_text.ilike(pattern, escape="\\"),
+                    Chunk.doc_title.ilike(pattern, escape="\\"),
+                    Chunk.article_no.ilike(pattern, escape="\\"),
                 )
             )
             .limit(top_k)
         )
         return self._apply_filters(statement, filters, current_version)
+
+
+def _escape_ilike(value: str) -> str:
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")

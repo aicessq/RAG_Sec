@@ -19,6 +19,7 @@ from datetime import date
 from pathlib import Path
 
 from fastapi import UploadFile
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -147,6 +148,25 @@ async def process_upload(
 
     service = storage_service or LocalStorageService()
     file_hash = calculate_file_hash(file_bytes)
+    db.execute(text("SELECT pg_advisory_xact_lock(hashtextextended(:file_hash, 0))"), {"file_hash": file_hash})
+    duplicate = db.execute(
+        select(DocumentVersion, Document)
+        .join(Document, Document.id == DocumentVersion.document_id)
+        .where(DocumentVersion.file_hash == file_hash)
+        .where(Document.status == "active")
+        .limit(1)
+    ).first()
+    if duplicate is not None:
+        existing_version, existing_document = duplicate
+        raise UploadValidationError(
+            "duplicate_document",
+            "相同内容的文档已存在",
+            {
+                "document_id": str(existing_document.id),
+                "version_id": str(existing_version.id),
+                "title": existing_document.title,
+            },
+        )
     saved_path: Path | None = None
     records_committed = False
 

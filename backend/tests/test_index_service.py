@@ -13,6 +13,7 @@ from app.services.index_service import IndexService
 @dataclass(slots=True)
 class FakeEmbeddingService:
     vectors: list[list[float]]
+    identity: str = "model=test;dim=4;normalize=true;preprocess=v1"
 
     def embed_texts(self, texts: list[str]) -> list[list[float]]:
         assert texts
@@ -26,6 +27,9 @@ class FakeVectorStore:
 
     def ensure_collection(self) -> None:
         self.ensure_called = True
+
+    def validate_embedding_identity(self, *, allow_empty: bool = False) -> None:
+        assert allow_empty is True
 
     def upsert_chunks(self, points):
         self.points = list(points)
@@ -104,6 +108,7 @@ def test_index_service_only_indexes_active_child_chunks() -> None:
     assert len(vector_store.points) == 1
     assert vector_store.points[0].payload["chunk_type"] == "child"
     assert vector_store.points[0].payload["is_active"] is True
+    assert vector_store.points[0].payload["embedding_identity"] == embedding_service.identity
     assert keyword_store.chunk_ids == [child_chunk.id]
 
 

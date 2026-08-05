@@ -104,7 +104,7 @@ def ingest_document_task(self, *, document_id: str, version_id: str, task_id: st
         if not _heartbeat(task_uuid, token):
             raise RuntimeError("任务租约已失效")
 
-        index_result = IndexService.from_db(db, allow_embedding_fallback=True).build_chunk_indexes(
+        index_result = IndexService.from_db(db).build_chunk_indexes(
             persisted_chunks, version=version
         )
         db.commit()

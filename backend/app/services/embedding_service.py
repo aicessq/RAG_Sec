@@ -101,10 +101,15 @@ class EmbeddingService:
         *,
         vector_size: int,
         batch_size: int,
+        model_name: str | None = None,
     ) -> None:
         self.model = model
         self.vector_size = vector_size
         self.batch_size = batch_size
+        self.model_name = model_name or model.__class__.__name__
+        self.identity = (
+            f"model={self.model_name};dim={vector_size};normalize=true;preprocess=v1"
+        )
 
     @classmethod
     def from_local_model(
@@ -158,7 +163,12 @@ class EmbeddingService:
                 )
             raise EmbeddingServiceError(f"embedding 模型加载失败: {resolved_path}") from exc
 
-        return cls(model, vector_size=resolved_vector_size, batch_size=resolved_batch_size)
+        return cls(
+            model,
+            vector_size=resolved_vector_size,
+            batch_size=resolved_batch_size,
+            model_name=resolved_path.name,
+        )
 
     def embed_text(self, text: str) -> list[float]:
         """生成单条文本向量。"""

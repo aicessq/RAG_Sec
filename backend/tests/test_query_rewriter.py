@@ -16,6 +16,13 @@ def test_term_expander_expands_security_terms_without_duplicates() -> None:
     assert len(expanded_terms) == len(set(term.lower() for term in expanded_terms))
 
 
+def test_term_expander_expands_personal_information_terms() -> None:
+    expanded_terms = TermExpander().expand("什么是个人信息")
+
+    assert "自然人个人身份" in expanded_terms
+    assert "个人身份信息" in expanded_terms
+
+
 def test_query_rewriter_builds_standard_query_payload() -> None:
     intent = IntentResult(
         intent="standard_query",

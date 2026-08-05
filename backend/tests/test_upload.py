@@ -86,6 +86,21 @@ def test_upload_pdf_success(upload_client: TestClient, db_session) -> None:
     assert str(dispatched[0]["task_id"]) == body["task_id"]
 
 
+def test_upload_rejects_duplicate_file_hash_with_existing_document_info(upload_client: TestClient) -> None:
+    payload = {
+        "data": {"title": "重复文档", "doc_type": "law"},
+        "files": {"file": ("same.txt", b"same-content", "text/plain")},
+    }
+    first = upload_client.post("/api/v1/documents/upload", **payload)
+    second = upload_client.post("/api/v1/documents/upload", **payload)
+
+    assert first.status_code == 200
+    assert second.status_code == 409
+    error = second.json()["error"]
+    assert error["code"] == "duplicate_document"
+    assert error["details"]["document_id"] == first.json()["document_id"]
+
+
 def test_upload_rejects_unsupported_file_type(upload_client: TestClient) -> None:
     response = upload_client.post(
         "/api/v1/documents/upload",

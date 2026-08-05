@@ -14,6 +14,7 @@ TERM_DICTIONARY: dict[str, list[str]] = {
     "waf": ["Web Application Firewall", "web 应用防火墙"],
     "edr": ["Endpoint Detection and Response", "终端检测与响应"],
     "cve": ["Common Vulnerabilities and Exposures", "漏洞编号"],
+    "个人信息": ["自然人个人身份", "个人身份信息", "可识别自然人的信息"],
 }
 
 

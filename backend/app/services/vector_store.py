@@ -48,6 +48,10 @@ class QdrantClientProtocol(Protocol):
 
     def collection_exists(self, collection_name: str) -> bool: ...
 
+    def get_collection(self, collection_name: str) -> object: ...
+
+    def count(self, *, collection_name: str, exact: bool) -> object: ...
+
     def create_collection(self, *, collection_name: str, vectors_config: object) -> None: ...
 
     def upsert(self, *, collection_name: str, points: list[object], wait: bool) -> object: ...
@@ -55,6 +59,11 @@ class QdrantClientProtocol(Protocol):
     def retrieve(self, *, collection_name: str, ids: list[str], with_payload: bool, with_vectors: bool) -> list[object]: ...
 
     def query_points(self, *, collection_name: str, query: list[float], limit: int, query_filter: object | None, with_payload: bool) -> object: ...
+
+    def scroll(
+        self, *, collection_name: str, limit: int, offset: object | None,
+        with_payload: bool, with_vectors: bool,
+    ) -> object: ...
 
     def set_payload(self, *, collection_name: str, payload: dict[str, Any], points: list[str], wait: bool) -> object: ...
 
@@ -78,11 +87,13 @@ class QdrantVectorStore:
         collection_name: str,
         vector_size: int,
         distance_metric: str,
+        expected_embedding_identity: str | None = None,
     ) -> None:
         self.client = client
         self.collection_name = collection_name
         self.vector_size = vector_size
         self.distance_metric = distance_metric
+        self.expected_embedding_identity = expected_embedding_identity
 
     @classmethod
     def from_settings(cls, *, client: QdrantClientProtocol | None = None) -> "QdrantVectorStore":
@@ -103,6 +114,7 @@ class QdrantVectorStore:
         if Distance is None or VectorParams is None:
             raise VectorStoreError("qdrant-client 未安装，无法创建 collection")
         if self.client.collection_exists(self.collection_name):
+            self.validate_collection_config()
             return
         self.client.create_collection(
             collection_name=self.collection_name,
@@ -111,6 +123,21 @@ class QdrantVectorStore:
                 distance=getattr(Distance, self.distance_metric, getattr(Distance, self.distance_metric.upper())),
             ),
         )
+
+    def validate_collection_config(self) -> None:
+        """拒绝复用维度或距离度量与当前 embedding 配置不一致的 collection。"""
+        info = self.client.get_collection(self.collection_name)
+        vectors = info.config.params.vectors
+        if isinstance(vectors, dict):
+            raise VectorStoreError("当前仅支持未命名的单向量 collection")
+        actual_size = int(vectors.size)
+        actual_distance = str(vectors.distance).lower()
+        if actual_size != self.vector_size or actual_distance != self.distance_metric.lower():
+            raise VectorStoreError(
+                "collection 向量配置不一致："
+                f"期望 dim={self.vector_size}, distance={self.distance_metric}；"
+                f"实际 dim={actual_size}, distance={vectors.distance}"
+            )
 
     def upsert_chunks(self, points: Sequence[VectorPoint]) -> int:
         """把 child chunk 向量写入 Qdrant。"""
@@ -146,6 +173,39 @@ class QdrantVectorStore:
             with_vectors=True,
         )
 
+    def validate_embedding_identity(self, *, allow_empty: bool = False) -> None:
+        """扫描 collection payload，拒绝空身份、旧索引或混合向量空间。"""
+        if not self.expected_embedding_identity:
+            return
+        offset: object | None = None
+        seen_identity = False
+        while True:
+            response = self.client.scroll(
+                collection_name=self.collection_name,
+                limit=256,
+                offset=offset,
+                with_payload=True,
+                with_vectors=False,
+            )
+            if isinstance(response, tuple):
+                points, next_offset = response
+            else:
+                points = getattr(response, "points", [])
+                next_offset = getattr(response, "next_page_offset", None)
+            for point in points:
+                payload = dict(getattr(point, "payload", {}) or {})
+                indexed_identity = payload.get("embedding_identity")
+                if indexed_identity != self.expected_embedding_identity:
+                    raise VectorStoreError(
+                        "embedding 模型身份不一致，必须使用新 collection 安全重建索引"
+                    )
+                seen_identity = True
+            if next_offset is None:
+                break
+            offset = next_offset
+        if not seen_identity and not allow_empty:
+            raise VectorStoreError("向量索引为空，无法验证 embedding 模型身份")
+
     def search(self, query_vector: list[float], *, top_k: int = 30, filters: MetadataFilter | None = None) -> list[RetrievalHit]:
         """按 query 向量检索 child chunk。"""
         effective_filters = filters or MetadataFilter()
@@ -161,6 +221,14 @@ class QdrantVectorStore:
         results: list[RetrievalHit] = []
         for point in points:
             payload = dict(getattr(point, "payload", {}) or {})
+            indexed_identity = payload.get("embedding_identity")
+            if (
+                self.expected_embedding_identity
+                and indexed_identity != self.expected_embedding_identity
+            ):
+                raise VectorStoreError(
+                    "embedding 模型身份不一致，必须使用新 collection 安全重建索引"
+                )
             if not matches_payload_filters(payload, effective_filters):
                 continue
             results.append(
